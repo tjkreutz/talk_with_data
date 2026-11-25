@@ -16,7 +16,7 @@ from talk_with_data.execution import run_query
 from talk_with_data.generation import MODEL, SYSTEM_PROMPT, generate_sql
 from talk_with_data.metrics import Attempt, Outcome
 from talk_with_data.questions import Question
-from talk_with_data.schema import CORE_TABLES
+from talk_with_data.schema import MODEL_TABLES
 
 LOGGER = logging.getLogger(__name__)
 MAX_WORKERS = 8
@@ -100,7 +100,7 @@ def describe_experiment(name: str, split: str, schema: str) -> dict[str, object]
         "git_commit": _get_git_version(),
         "model": MODEL,
         "prompt_hash": _hash_prompt(schema),
-        "tables": list(CORE_TABLES),
+        "tables": list(MODEL_TABLES),
         "split": split,
     }
 

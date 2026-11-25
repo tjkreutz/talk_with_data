@@ -131,9 +131,7 @@ class TestExperiment(unittest.TestCase):
         self.assertEqual(description["experiment"], "baseline")
         self.assertEqual(description["git_commit"], "abc1234+dirty")
         self.assertEqual(description["model"], MODEL)
-        self.assertEqual(
-            description["tables"], ["orders", "order_reviews", "customers"]
-        )
+        self.assertEqual(description["tables"], ["order_facts", "review_facts"])
         self.assertEqual(description["split"], "dev")
         self.assertTrue(str(description["timestamp"]).endswith("+00:00"))
 
