@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from duckdb import DuckDBPyConnection
@@ -17,23 +18,41 @@ FAILURE = (
 
 @dataclass(frozen=True)
 class Answer:
-    text: str
     sql: str
-    rows: list[tuple[object, ...]]
+    rows: list[tuple[object, ...]] | None = None
+    text: str = ""
     error: str | None = None
 
 
 def answer_question(
     connection: DuckDBPyConnection, client: OpenAI, schema: str, question: str
 ) -> Answer:
+    *_, answer = stream_answer(connection, client, schema, question)
+
+    return answer
+
+
+def stream_answer(
+    connection: DuckDBPyConnection, client: OpenAI, schema: str, question: str
+) -> Iterator[Answer]:
     sql = generate_sql(client, question, schema)
+
+    yield Answer(sql=sql)
+
     result = try_query(connection, sql)
 
     if result.error is not None:
         LOGGER.info("Query failed: %s", result.error)
 
-        return Answer(text=FAILURE, sql=sql, rows=[], error=result.error)
+        yield Answer(sql=sql, rows=[], text=FAILURE, error=result.error)
 
-    text = write_answer(client, question, sql, result.rows)
+        return
 
-    return Answer(text=text, sql=sql, rows=result.rows)
+    yield Answer(sql=sql, rows=result.rows)
+
+    text = ""
+
+    for piece in write_answer(client, question, sql, result.rows):
+        text += piece
+
+        yield Answer(sql=sql, rows=result.rows, text=text.strip())

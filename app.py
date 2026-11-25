@@ -1,15 +1,8 @@
 from duckdb import DuckDBPyConnection
-from streamlit import (
-    cache_resource,
-    caption,
-    chat_input,
-    code,
-    dataframe,
-    markdown,
-    warning,
-)
+from streamlit import cache_resource, chat_input, empty
+from streamlit.delta_generator import DeltaGenerator
 
-from talk_with_data.answer import answer_question
+from talk_with_data.answer import Answer, stream_answer
 from talk_with_data.database import create_connection
 from talk_with_data.schema import describe_schema
 from talk_with_data.text_to_sql import create_client
@@ -25,18 +18,25 @@ def main() -> None:
 
     connection = _get_connection()
     schema = describe_schema(connection)
-    answer = answer_question(connection, create_client(), schema, question)
+    slots = (empty(), empty(), empty())
+
+    for answer in stream_answer(connection, create_client(), schema, question):
+        _show(answer, *slots)
+
+
+def _show(
+    answer: Answer, sql: DeltaGenerator, result: DeltaGenerator, text: DeltaGenerator
+) -> None:
+    sql.code(answer.sql, language="sql")
 
     if answer.error is not None:
-        warning(answer.text)
-        code(answer.sql, language="sql")
-        caption(answer.error)
+        result.caption(answer.error)
+        text.warning(answer.text)
+    elif answer.rows is not None:
+        result.dataframe(answer.rows)
 
-        return
-
-    markdown(answer.text)
-    code(answer.sql, language="sql")
-    dataframe(answer.rows)
+    if answer.error is None and answer.text:
+        text.markdown(answer.text)
 
 
 @cache_resource

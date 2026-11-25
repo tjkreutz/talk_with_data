@@ -1,5 +1,5 @@
 import json
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 
 from openai import OpenAI
 
@@ -14,17 +14,22 @@ from talk_with_data.utils import load_prompt
 
 def write_answer(
     client: OpenAI, question: str, sql: str, rows: Sequence[Sequence[object]]
-) -> str:
-    response = client.chat.completions.create(
+) -> Iterator[str]:
+    stream = client.chat.completions.create(
         model=WRITER_MODEL,
         temperature=WRITER_TEMPERATURE,
+        stream=True,
         messages=[
             {"role": "system", "content": load_prompt(WRITER_PROMPT_NAME)},
             {"role": "user", "content": _format_request(question, sql, rows)},
         ],
     )
 
-    return (response.choices[0].message.content or "").strip()
+    for chunk in stream:
+        piece = chunk.choices[0].delta.content if chunk.choices else None
+
+        if piece:
+            yield piece
 
 
 def _format_request(question: str, sql: str, rows: Sequence[Sequence[object]]) -> str:
