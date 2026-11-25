@@ -22,7 +22,7 @@ def generate_sql(client: OpenAI, question: str, schema: str) -> str:
         ],
     )
 
-    return extract_sql(response.choices[0].message.content or "")
+    return _extract_sql(response.choices[0].message.content or "")
 
 
 def create_client() -> OpenAI:
@@ -31,7 +31,7 @@ def create_client() -> OpenAI:
     return OpenAI(base_url=os.environ["LLM_API_URL"], api_key=os.environ["LLM_API_KEY"])
 
 
-def extract_sql(reply: str) -> str:
+def _extract_sql(reply: str) -> str:
     match = CODE_BLOCK.search(reply)
 
     return (match.group(1) if match else reply).strip()

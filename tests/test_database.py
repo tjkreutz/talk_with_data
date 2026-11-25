@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from talk_with_data.database import create_connection, get_table_name
+from talk_with_data.database import _get_table_name, create_connection
 
 ORDERS_CSV = (
     '"order_id","order_purchase_timestamp"\n'
@@ -57,13 +57,13 @@ class TestDatabase(unittest.TestCase):
 
     def test_get_table_name(self) -> None:
         self.assertEqual(
-            get_table_name(Path("data/raw/olist_orders_dataset.csv")), "orders"
+            _get_table_name(Path("data/raw/olist_orders_dataset.csv")), "orders"
         )
         self.assertEqual(
-            get_table_name(Path("olist_order_items_dataset.csv")), "order_items"
+            _get_table_name(Path("olist_order_items_dataset.csv")), "order_items"
         )
         self.assertEqual(
-            get_table_name(Path("product_category_name_translation.csv")),
+            _get_table_name(Path("product_category_name_translation.csv")),
             "product_category_name_translation",
         )
 

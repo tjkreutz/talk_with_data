@@ -9,13 +9,13 @@ from unittest.mock import MagicMock, patch
 from duckdb import connect
 
 from talk_with_data.experiment import (
+    _evaluate_attempt,
+    _execute_attempt,
+    _get_git_version,
+    _hash_prompt,
+    _preview_rows,
     append_record,
     describe_experiment,
-    evaluate_attempt,
-    execute_attempt,
-    get_git_version,
-    hash_prompt,
-    preview_rows,
     run_experiment,
     write_attempts,
 )
@@ -24,10 +24,10 @@ from talk_with_data.metrics import Attempt
 from talk_with_data.questions import Question
 
 RUN = "talk_with_data.experiment.run"
-GIT_VERSION = "talk_with_data.experiment.get_git_version"
+GIT_VERSION = "talk_with_data.experiment._get_git_version"
 
 
-def make_question(gold_sql: str) -> Question:
+def _make_question(gold_sql: str) -> Question:
     return Question(id="q1", template="a", question="How many?", gold_sql=gold_sql)
 
 
@@ -67,9 +67,9 @@ class TestExperiment(unittest.TestCase):
         self.assertEqual(attempts[1].gold, [[2]])
 
     def test_evaluate_attempt(self) -> None:
-        question = make_question("SELECT 1")
+        question = _make_question("SELECT 1")
 
-        attempt = evaluate_attempt(self.connection, "SELECT 2", question, 3, [(1,)])
+        attempt = _evaluate_attempt(self.connection, "SELECT 2", question, 3, [(1,)])
 
         self.assertEqual(
             attempt,
@@ -86,11 +86,11 @@ class TestExperiment(unittest.TestCase):
         )
 
     def test_execute_attempt(self) -> None:
-        question = make_question("SELECT 1")
+        question = _make_question("SELECT 1")
         gold = [(1,)]
 
         def execute(sql: str) -> tuple[str, object]:
-            return execute_attempt(self.connection, sql, question, gold)
+            return _execute_attempt(self.connection, sql, question, gold)
 
         self.assertEqual(execute("SELECT 1"), ("correct", [[1]]))
         self.assertEqual(execute("SELECT 2"), ("wrong", [[2]]))
@@ -187,28 +187,28 @@ class TestExperiment(unittest.TestCase):
     def test_preview_rows(self) -> None:
         rows = [(number, "x") for number in range(8)]
 
-        self.assertEqual(preview_rows(rows), [[number, "x"] for number in range(5)])
-        self.assertEqual(preview_rows(rows[:2]), [[0, "x"], [1, "x"]])
-        self.assertEqual(preview_rows([]), [])
+        self.assertEqual(_preview_rows(rows), [[number, "x"] for number in range(5)])
+        self.assertEqual(_preview_rows(rows[:2]), [[0, "x"], [1, "x"]])
+        self.assertEqual(_preview_rows([]), [])
 
     def test_hash_prompt(self) -> None:
-        first = hash_prompt("CREATE TABLE t(a INT);")
+        first = _hash_prompt("CREATE TABLE t(a INT);")
 
         self.assertEqual(len(first), 8)
-        self.assertEqual(first, hash_prompt("CREATE TABLE t(a INT);"))
-        self.assertNotEqual(first, hash_prompt("CREATE TABLE t(b INT);"))
+        self.assertEqual(first, _hash_prompt("CREATE TABLE t(a INT);"))
+        self.assertNotEqual(first, _hash_prompt("CREATE TABLE t(b INT);"))
 
     def test_get_git_version(self) -> None:
         def completed(stdout: str) -> CompletedProcess[str]:
             return CompletedProcess(args=[], returncode=0, stdout=stdout)
 
         with patch(RUN, side_effect=[completed("abc1234\n"), completed("")]):
-            self.assertEqual(get_git_version(), "abc1234")
+            self.assertEqual(_get_git_version(), "abc1234")
 
         with patch(
             RUN, side_effect=[completed("abc1234\n"), completed(" M file.py\n")]
         ):
-            self.assertEqual(get_git_version(), "abc1234+dirty")
+            self.assertEqual(_get_git_version(), "abc1234+dirty")
 
 
 if __name__ == "__main__":

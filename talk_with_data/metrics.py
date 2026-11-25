@@ -27,18 +27,18 @@ class Attempt:
 
 
 def summarize(attempts: Sequence[Attempt]) -> dict[str, object]:
-    template_accuracies = compute_template_accuracies(attempts)
-    lower, upper = bootstrap_interval(list(template_accuracies.values()), Random(SEED))
-    rates = compute_outcome_rates(attempts)
+    template_accuracies = _compute_template_accuracies(attempts)
+    lower, upper = _bootstrap_interval(list(template_accuracies.values()), Random(SEED))
+    rates = _compute_outcome_rates(attempts)
 
     return {
         "questions": len({attempt.question_id for attempt in attempts}),
         "runs": len({attempt.run for attempt in attempts}),
-        "accuracy": round(compute_accuracy(attempts), DECIMALS),
-        "accuracy_std": round(compute_accuracy_std(attempts), DECIMALS),
+        "accuracy": round(_compute_accuracy(attempts), DECIMALS),
+        "accuracy_std": round(_compute_accuracy_std(attempts), DECIMALS),
         "accuracy_ci95": [round(lower, DECIMALS), round(upper, DECIMALS)],
         "outcomes": {outcome: round(rate, DECIMALS) for outcome, rate in rates.items()},
-        "consistency": count_consistency(attempts),
+        "consistency": _count_consistency(attempts),
         "template_accuracy": {
             template: round(accuracy, DECIMALS)
             for template, accuracy in template_accuracies.items()
@@ -46,35 +46,35 @@ def summarize(attempts: Sequence[Attempt]) -> dict[str, object]:
     }
 
 
-def compute_accuracy(attempts: Sequence[Attempt]) -> float:
+def _compute_accuracy(attempts: Sequence[Attempt]) -> float:
     return sum(attempt.outcome == "correct" for attempt in attempts) / len(attempts)
 
 
-def compute_accuracy_std(attempts: Sequence[Attempt]) -> float:
-    return stdev(compute_run_accuracies(attempts))
+def _compute_accuracy_std(attempts: Sequence[Attempt]) -> float:
+    return stdev(_compute_run_accuracies(attempts))
 
 
-def compute_run_accuracies(attempts: Sequence[Attempt]) -> list[float]:
-    runs = group_by(attempts, lambda attempt: attempt.run)
+def _compute_run_accuracies(attempts: Sequence[Attempt]) -> list[float]:
+    runs = _group_by(attempts, lambda attempt: attempt.run)
 
-    return [compute_accuracy(runs[run]) for run in sorted(runs)]
+    return [_compute_accuracy(runs[run]) for run in sorted(runs)]
 
 
-def compute_outcome_rates(attempts: Sequence[Attempt]) -> dict[Outcome, float]:
+def _compute_outcome_rates(attempts: Sequence[Attempt]) -> dict[Outcome, float]:
     counts = Counter(attempt.outcome for attempt in attempts)
 
     return {outcome: counts[outcome] / len(attempts) for outcome in OUTCOMES}
 
 
-def compute_template_accuracies(attempts: Sequence[Attempt]) -> dict[str, float]:
-    templates = group_by(attempts, lambda attempt: attempt.template)
+def _compute_template_accuracies(attempts: Sequence[Attempt]) -> dict[str, float]:
+    templates = _group_by(attempts, lambda attempt: attempt.template)
 
-    return {template: compute_accuracy(group) for template, group in templates.items()}
+    return {template: _compute_accuracy(group) for template, group in templates.items()}
 
 
-def count_consistency(attempts: Sequence[Attempt]) -> dict[str, int]:
-    questions = group_by(attempts, lambda attempt: attempt.question_id)
-    accuracies = [compute_accuracy(group) for group in questions.values()]
+def _count_consistency(attempts: Sequence[Attempt]) -> dict[str, int]:
+    questions = _group_by(attempts, lambda attempt: attempt.question_id)
+    accuracies = [_compute_accuracy(group) for group in questions.values()]
 
     return {
         "always_correct": sum(accuracy == 1 for accuracy in accuracies),
@@ -83,14 +83,14 @@ def count_consistency(attempts: Sequence[Attempt]) -> dict[str, int]:
     }
 
 
-def bootstrap_interval(values: Sequence[float], rng: Random) -> tuple[float, float]:
+def _bootstrap_interval(values: Sequence[float], rng: Random) -> tuple[float, float]:
     means = sorted(mean(rng.choices(values, k=len(values))) for _ in range(RESAMPLES))
     tail = (1 - CONFIDENCE) / 2
 
     return means[int(RESAMPLES * tail)], means[int(RESAMPLES * (1 - tail)) - 1]
 
 
-def group_by[Key](
+def _group_by[Key](
     attempts: Sequence[Attempt], key: Callable[[Attempt], Key]
 ) -> dict[Key, list[Attempt]]:
     groups: dict[Key, list[Attempt]] = {}

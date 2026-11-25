@@ -43,19 +43,19 @@ def run_experiment(
     gold_rows = {q.id: run_query(connection, q.gold_sql) for q in questions}
 
     return [
-        evaluate_attempt(connection, sql, question, run, gold_rows[question.id])
+        _evaluate_attempt(connection, sql, question, run, gold_rows[question.id])
         for (question, run), sql in zip(jobs, sqls, strict=True)
     ]
 
 
-def evaluate_attempt(
+def _evaluate_attempt(
     connection: DuckDBPyConnection,
     sql: str,
     question: Question,
     run: int,
     gold_rows: Sequence[Sequence[object]],
 ) -> Attempt:
-    outcome, result = execute_attempt(connection, sql, question, gold_rows)
+    outcome, result = _execute_attempt(connection, sql, question, gold_rows)
 
     return Attempt(
         question_id=question.id,
@@ -65,11 +65,11 @@ def evaluate_attempt(
         sql=sql,
         outcome=outcome,
         result=result,
-        gold=preview_rows(gold_rows),
+        gold=_preview_rows(gold_rows),
     )
 
 
-def execute_attempt(
+def _execute_attempt(
     connection: DuckDBPyConnection,
     sql: str,
     question: Question,
@@ -82,7 +82,7 @@ def execute_attempt(
 
         return "error", str(error)
 
-    preview = preview_rows(predicted)
+    preview = _preview_rows(predicted)
 
     if results_match(predicted, gold_rows, question.gold_sql):
         return "correct", preview
@@ -97,9 +97,9 @@ def describe_experiment(name: str, split: str, schema: str) -> dict[str, object]
         "id": f"{name}-{now:%Y%m%dT%H%M%S}",
         "experiment": name,
         "timestamp": now.isoformat(timespec="seconds"),
-        "git_commit": get_git_version(),
+        "git_commit": _get_git_version(),
         "model": MODEL,
-        "prompt_hash": hash_prompt(schema),
+        "prompt_hash": _hash_prompt(schema),
         "tables": list(CORE_TABLES),
         "split": split,
     }
@@ -119,17 +119,17 @@ def write_attempts(attempts: Sequence[Attempt], path: Path) -> None:
     path.write_text("".join(f"{line}\n" for line in lines), encoding="utf-8")
 
 
-def preview_rows(rows: Sequence[Sequence[object]]) -> list[list[object]]:
+def _preview_rows(rows: Sequence[Sequence[object]]) -> list[list[object]]:
     return [list(row) for row in rows[:PREVIEW_ROWS]]
 
 
-def hash_prompt(schema: str) -> str:
+def _hash_prompt(schema: str) -> str:
     prompt = SYSTEM_PROMPT.format(schema=schema)
 
     return sha256(prompt.encode()).hexdigest()[:HASH_LENGTH]
 
 
-def get_git_version() -> str:
+def _get_git_version() -> str:
     commit = run(
         ["git", "rev-parse", "--short", "HEAD"],
         capture_output=True,

@@ -5,19 +5,19 @@ from statistics import StatisticsError
 from talk_with_data.metrics import (
     Attempt,
     Outcome,
-    bootstrap_interval,
-    compute_accuracy,
-    compute_accuracy_std,
-    compute_outcome_rates,
-    compute_run_accuracies,
-    compute_template_accuracies,
-    count_consistency,
-    group_by,
+    _bootstrap_interval,
+    _compute_accuracy,
+    _compute_accuracy_std,
+    _compute_outcome_rates,
+    _compute_run_accuracies,
+    _compute_template_accuracies,
+    _count_consistency,
+    _group_by,
     summarize,
 )
 
 
-def attempt(question: str, template: str, run: int, outcome: Outcome) -> Attempt:
+def _attempt(question: str, template: str, run: int, outcome: Outcome) -> Attempt:
     return Attempt(
         question_id=question,
         template=template,
@@ -33,12 +33,12 @@ def attempt(question: str, template: str, run: int, outcome: Outcome) -> Attempt
 class TestMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.attempts = [
-            attempt("q1", "a", 1, "correct"),
-            attempt("q1", "a", 2, "correct"),
-            attempt("q2", "a", 1, "correct"),
-            attempt("q2", "a", 2, "wrong"),
-            attempt("q3", "b", 1, "error"),
-            attempt("q3", "b", 2, "empty"),
+            _attempt("q1", "a", 1, "correct"),
+            _attempt("q1", "a", 2, "correct"),
+            _attempt("q2", "a", 1, "correct"),
+            _attempt("q2", "a", 2, "wrong"),
+            _attempt("q3", "b", 1, "error"),
+            _attempt("q3", "b", 2, "empty"),
         ]
 
     def test_summarize(self) -> None:
@@ -61,18 +61,18 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(summary, summarize(self.attempts))
 
     def test_compute_accuracy(self) -> None:
-        self.assertEqual(compute_accuracy(self.attempts), 0.5)
-        self.assertEqual(compute_accuracy(self.attempts[:2]), 1.0)
-        self.assertEqual(compute_accuracy(self.attempts[4:]), 0.0)
+        self.assertEqual(_compute_accuracy(self.attempts), 0.5)
+        self.assertEqual(_compute_accuracy(self.attempts[:2]), 1.0)
+        self.assertEqual(_compute_accuracy(self.attempts[4:]), 0.0)
 
     def test_compute_accuracy_std(self) -> None:
-        self.assertAlmostEqual(compute_accuracy_std(self.attempts), 0.2357, places=4)
+        self.assertAlmostEqual(_compute_accuracy_std(self.attempts), 0.2357, places=4)
 
         with self.assertRaises(StatisticsError):
-            compute_accuracy_std(self.attempts[:1])
+            _compute_accuracy_std(self.attempts[:1])
 
     def test_compute_run_accuracies(self) -> None:
-        run_accuracies = compute_run_accuracies(self.attempts)
+        run_accuracies = _compute_run_accuracies(self.attempts)
 
         self.assertAlmostEqual(run_accuracies[0], 2 / 3)
         self.assertAlmostEqual(run_accuracies[1], 1 / 3)
@@ -80,43 +80,43 @@ class TestMetrics(unittest.TestCase):
 
     def test_compute_outcome_rates(self) -> None:
         self.assertEqual(
-            compute_outcome_rates(self.attempts[:4]),
+            _compute_outcome_rates(self.attempts[:4]),
             {"correct": 0.75, "wrong": 0.25, "empty": 0.0, "error": 0.0},
         )
 
     def test_compute_template_accuracies(self) -> None:
         self.assertEqual(
-            compute_template_accuracies(self.attempts), {"a": 0.75, "b": 0.0}
+            _compute_template_accuracies(self.attempts), {"a": 0.75, "b": 0.0}
         )
 
     def test_count_consistency(self) -> None:
         self.assertEqual(
-            count_consistency(self.attempts),
+            _count_consistency(self.attempts),
             {"always_correct": 1, "sometimes_correct": 1, "never_correct": 1},
         )
         self.assertEqual(
-            count_consistency(self.attempts[:2]),
+            _count_consistency(self.attempts[:2]),
             {"always_correct": 1, "sometimes_correct": 0, "never_correct": 0},
         )
 
     def test_bootstrap_interval(self) -> None:
-        self.assertEqual(bootstrap_interval([0.5] * 5, Random(1)), (0.5, 0.5))
+        self.assertEqual(_bootstrap_interval([0.5] * 5, Random(1)), (0.5, 0.5))
 
         values = [0.0, 0.2, 0.6, 0.8, 1.0, 1.0]
-        lower, upper = bootstrap_interval(values, Random(1))
+        lower, upper = _bootstrap_interval(values, Random(1))
 
         self.assertLess(lower, upper)
         self.assertGreaterEqual(lower, min(values))
         self.assertLessEqual(upper, max(values))
-        self.assertEqual((lower, upper), bootstrap_interval(values, Random(1)))
+        self.assertEqual((lower, upper), _bootstrap_interval(values, Random(1)))
 
     def test_group_by(self) -> None:
-        groups = group_by(self.attempts, lambda item: item.template)
+        groups = _group_by(self.attempts, lambda item: item.template)
 
         self.assertEqual(list(groups), ["a", "b"])
         self.assertEqual(len(groups["a"]), 4)
         self.assertEqual(groups["b"], self.attempts[4:])
-        self.assertEqual(group_by([], lambda item: item.run), {})
+        self.assertEqual(_group_by([], lambda item: item.run), {})
 
 
 if __name__ == "__main__":
