@@ -25,6 +25,15 @@ unzip -o olist.zip -d data/raw
 The LLM is reached through an OpenAI-compatible API (we use OpenRouter). Copy
 `.env.example` to `.env` and fill in `LLM_API_KEY`.
 
+## Evaluation
+
+```sh
+uv run python evaluation.py
+```
+
+Runs the baseline on the dev questions (5 runs each) and appends a summary line
+to `data/experiments.jsonl`.
+
 ## Development
 
 ```sh
