@@ -7,53 +7,41 @@ from talk_with_data.comparison import (
     _canonicalize_value,
     _count_decimals,
     _get_column_decimals,
-    _has_order_by,
     _is_number,
     results_match,
 )
-
-UNORDERED = "SELECT state, count(*) FROM customers GROUP BY state"
-ORDERED = "SELECT state, count(*) FROM customers GROUP BY state ORDER BY 2 DESC"
 
 
 class TestComparison(unittest.TestCase):
     def test_results_match(self) -> None:
         gold = [("SP", 10), ("RJ", 5)]
 
-        self.assertTrue(results_match([("SP", 10), ("RJ", 5)], gold, UNORDERED))
-        self.assertTrue(results_match([("RJ", 5), ("SP", 10)], gold, UNORDERED))
-        self.assertFalse(results_match([("RJ", 5), ("SP", 10)], gold, ORDERED))
-        self.assertTrue(results_match([("SP", 10), ("RJ", 5)], gold, ORDERED))
-        self.assertFalse(results_match([("SP", 10), ("RJ", 6)], gold, UNORDERED))
-        self.assertFalse(results_match([("SP", 10)], gold, UNORDERED))
-        self.assertFalse(results_match([("SP", 10), ("SP", 10)], gold, UNORDERED))
-        self.assertFalse(results_match([("SP", 10, 1), ("RJ", 5, 1)], gold, UNORDERED))
-        self.assertFalse(results_match([(10,), (5,)], gold, UNORDERED))
+        self.assertTrue(results_match([("SP", 10), ("RJ", 5)], gold))
+        self.assertFalse(results_match([("RJ", 5), ("SP", 10)], gold))
+        self.assertFalse(results_match([("SP", 10), ("RJ", 6)], gold))
+        self.assertFalse(results_match([("SP", 10)], gold))
+        self.assertFalse(results_match([("SP", 10), ("SP", 10)], gold))
+        self.assertFalse(results_match([("SP", 10, 1), ("RJ", 5, 1)], gold))
+        self.assertFalse(results_match([(10,), (5,)], gold))
 
     def test_results_match_numbers(self) -> None:
-        self.assertTrue(results_match([(12.557,)], [(12.6,)], UNORDERED))
-        self.assertTrue(results_match([(12.6,)], [(12.6,)], UNORDERED))
-        self.assertFalse(results_match([(45.7567,)], [(45.1,)], UNORDERED))
-        self.assertTrue(results_match([(0.5912,)], [(0.59,)], UNORDERED))
-        self.assertFalse(results_match([(0.64,)], [(0.59,)], UNORDERED))
-        self.assertTrue(results_match([(13.0,)], [(13,)], UNORDERED))
-        self.assertFalse(results_match([(7.4,)], [(7,)], UNORDERED))
-        self.assertTrue(results_match([(Decimal("2.50"),)], [(2.5,)], UNORDERED))
+        self.assertTrue(results_match([(12.557,)], [(12.6,)]))
+        self.assertTrue(results_match([(12.6,)], [(12.6,)]))
+        self.assertFalse(results_match([(45.7567,)], [(45.1,)]))
+        self.assertTrue(results_match([(0.5912,)], [(0.59,)]))
+        self.assertFalse(results_match([(0.64,)], [(0.59,)]))
+        self.assertTrue(results_match([(13.0,)], [(13,)]))
+        self.assertFalse(results_match([(7.4,)], [(7,)]))
+        self.assertTrue(results_match([(Decimal("2.50"),)], [(2.5,)]))
 
     def test_results_match_other_values(self) -> None:
         moment = datetime(2017, 11, 24, 10, 0)
 
-        self.assertTrue(results_match([(moment, None)], [(moment, None)], UNORDERED))
-        self.assertFalse(results_match([("sao paulo",)], [("São Paulo",)], UNORDERED))
-        self.assertTrue(results_match([], [], UNORDERED))
-        self.assertFalse(results_match([], [(1,)], UNORDERED))
-        self.assertFalse(results_match([(1,)], [], UNORDERED))
-
-    def test_has_order_by(self) -> None:
-        self.assertTrue(_has_order_by("SELECT 1 ORDER BY 1"))
-        self.assertTrue(_has_order_by("select 1 order\n  by x desc"))
-        self.assertFalse(_has_order_by("SELECT 1"))
-        self.assertFalse(_has_order_by("SELECT reorder by_date FROM t"))
+        self.assertTrue(results_match([(moment, None)], [(moment, None)]))
+        self.assertFalse(results_match([("sao paulo",)], [("São Paulo",)]))
+        self.assertTrue(results_match([], []))
+        self.assertFalse(results_match([], [(1,)]))
+        self.assertFalse(results_match([(1,)], []))
 
     def test_get_column_decimals(self) -> None:
         rows = [("a", 1, 12.6, 0.59), ("b", 2, 13.0, 0.5)]

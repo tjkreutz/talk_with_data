@@ -83,7 +83,7 @@ def _execute_attempt(
 
     preview = _preview_rows(predicted)
 
-    if results_match(predicted, gold_rows, question.gold_sql):
+    if results_match(predicted, gold_rows):
         return "correct", preview
 
     return ("wrong" if predicted else "empty"), preview

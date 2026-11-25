@@ -76,9 +76,11 @@ would punish that. The comparison is `results_match` in
 
 - **Column names are ignored.** Aliases are arbitrary. The number of columns
   must match, so an extra column counts as wrong.
-- **Row order is ignored, unless the gold SQL has an `ORDER BY`.** Then order
-  must match. A gold query with `ORDER BY` inside a window function also counts
-  as ordered, which only matters for multi-row results.
+- **Row order must match.** Every multi-row gold query has an `ORDER BY` (25 of
+  300 questions, none without), so there is nothing to gain from an
+  order-insensitive comparison. We had one at first, and removed it because it
+  never ran on real data. If we ever add a multi-row question without an
+  `ORDER BY`, we need to bring it back.
 - **Numbers are rounded to the precision of the gold column.** Gold queries
   round (12.6), the model usually does not (12.557), so the model's value is
   rounded to the gold's number of decimals. A gold column of whole numbers
