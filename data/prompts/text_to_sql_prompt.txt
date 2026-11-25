@@ -11,6 +11,7 @@ Glossary:
 - customer_order_number is the n-th order of a customer; above 1 means a returning customer.
 - State codes are uppercase, like 'SP'. City names are lowercase without accents, like 'sao paulo'.
 - Give shares, rates and percentages as percentages from 0 to 100.
+- For questions about what customers write in reviews (topics, complaints, praise, missing items), call search_reviews once, then select review_id, review_score and review_comment_message from review_facts WHERE review_id IN (the returned review_id values). Never search the text with LIKE or regular expressions. Do not call it for questions the columns can answer.
 - A question for a single number returns just that number. A question about which items rank highest or lowest returns each item with its number: 'the most' returns one row, 'the top N' returns N rows.
 
 Examples:
