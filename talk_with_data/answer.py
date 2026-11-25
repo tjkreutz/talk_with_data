@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 from duckdb import DuckDBPyConnection
 from openai import OpenAI
@@ -14,15 +15,25 @@ FAILURE = (
 )
 
 
+@dataclass(frozen=True)
+class Answer:
+    text: str
+    sql: str
+    rows: list[tuple[object, ...]]
+    error: str | None = None
+
+
 def answer_question(
     connection: DuckDBPyConnection, client: OpenAI, schema: str, question: str
-) -> str:
+) -> Answer:
     sql = generate_sql(client, question, schema)
     result = try_query(connection, sql)
 
     if result.error is not None:
         LOGGER.info("Query failed: %s", result.error)
 
-        return FAILURE
+        return Answer(text=FAILURE, sql=sql, rows=[], error=result.error)
 
-    return write_answer(client, question, sql, result.rows)
+    text = write_answer(client, question, sql, result.rows)
+
+    return Answer(text=text, sql=sql, rows=result.rows)

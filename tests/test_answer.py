@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from duckdb import connect
 
-from talk_with_data.answer import FAILURE, answer_question
+from talk_with_data.answer import FAILURE, Answer, answer_question
 
 
 class TestAnswer(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestAnswer(unittest.TestCase):
         self.connection.execute("CREATE TABLE t AS SELECT 1 AS n")
         self.client = MagicMock()
 
-    def _answer(self, sql: str) -> tuple[str, MagicMock]:
+    def _answer(self, sql: str) -> tuple[Answer, MagicMock]:
         write = MagicMock(return_value="There is one row.")
 
         with (
@@ -26,9 +26,11 @@ class TestAnswer(unittest.TestCase):
         return reply, write
 
     def test_answer_question(self) -> None:
-        reply, write = self._answer("SELECT n FROM t")
+        answer, write = self._answer("SELECT n FROM t")
 
-        self.assertEqual(reply, "There is one row.")
+        self.assertEqual(
+            answer, Answer(text="There is one row.", sql="SELECT n FROM t", rows=[(1,)])
+        )
         write.assert_called_once_with(
             self.client, "How many?", "SELECT n FROM t", [(1,)]
         )
@@ -38,9 +40,12 @@ class TestAnswer(unittest.TestCase):
             "SELECT nope FROM t",
             "I cannot answer that",
         ):
-            reply, write = self._answer(sql)
+            answer, write = self._answer(sql)
 
-            self.assertEqual(reply, FAILURE, sql)
+            self.assertEqual(answer.text, FAILURE, sql)
+            self.assertEqual(answer.sql, sql)
+            self.assertEqual(answer.rows, [])
+            self.assertTrue(answer.error, sql)
             write.assert_not_called()
 
 

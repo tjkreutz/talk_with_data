@@ -12,7 +12,7 @@ def main() -> None:
     schema = describe_schema(connection)
 
     while question := _read_question():
-        print(answer_question(connection, client, schema, question))
+        print(answer_question(connection, client, schema, question).text)
 
 
 def _read_question() -> str:
