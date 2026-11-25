@@ -1,6 +1,6 @@
 import logging
 
-from duckdb import DuckDBPyConnection, Error
+from duckdb import DuckDBPyConnection
 from streamlit import (
     cache_resource,
     caption,
@@ -12,7 +12,7 @@ from streamlit import (
 )
 
 from talk_with_data.database import create_connection
-from talk_with_data.execution import run_query
+from talk_with_data.execution import try_query
 from talk_with_data.schema import describe_schema
 from talk_with_data.text_to_sql import create_client, generate_sql
 from talk_with_data.writer import write_answer
@@ -35,19 +35,19 @@ def main() -> None:
     client = create_client()
     sql = generate_sql(client, question, describe_schema(connection))
 
-    try:
-        rows = run_query(connection, sql)
-    except (Error, ValueError) as failure:
-        LOGGER.warning("Query failed: %s", failure)
+    result = try_query(connection, sql)
+
+    if result.error is not None:
+        LOGGER.warning("Query failed: %s", result.error)
         warning(FAILURE)
         code(sql, language="sql")
-        caption(str(failure))
+        caption(result.error)
 
         return
 
-    markdown(write_answer(client, question, sql, rows))
+    markdown(write_answer(client, question, sql, result.rows))
     code(sql, language="sql")
-    dataframe(rows)
+    dataframe(result.rows)
 
 
 @cache_resource

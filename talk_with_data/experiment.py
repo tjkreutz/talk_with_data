@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 
-from duckdb import DuckDBPyConnection, Error
+from duckdb import DuckDBPyConnection
 from openai import OpenAI
 
 from talk_with_data.comparison import results_match
@@ -17,7 +17,7 @@ from talk_with_data.config import (
     MODEL_TABLES,
     PREVIEW_ROWS,
 )
-from talk_with_data.execution import run_query
+from talk_with_data.execution import run_query, try_query
 from talk_with_data.metrics import Attempt, Outcome
 from talk_with_data.questions import Question
 from talk_with_data.text_to_sql import build_system_prompt, generate_sql
@@ -77,13 +77,14 @@ def _execute_attempt(
     question: Question,
     gold_rows: Sequence[Sequence[object]],
 ) -> tuple[Outcome, object]:
-    try:
-        predicted = run_query(connection, sql)
-    except (Error, ValueError) as error:
-        LOGGER.warning("%s: %s", question.id, error)
+    result = try_query(connection, sql)
 
-        return "error", str(error)
+    if result.error is not None:
+        LOGGER.warning("%s: %s", question.id, result.error)
 
+        return "error", result.error
+
+    predicted = result.rows
     preview = _preview_rows(predicted)
 
     if results_match(predicted, gold_rows):
