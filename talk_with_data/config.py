@@ -1,7 +1,7 @@
 from pathlib import Path
 
 MODEL = "google/gemini-3.5-flash-lite"
-PROMPT_NAME = "system_prompt"
+PROMPT_NAME = "text_to_sql_prompt"
 
 WRITER_MODEL = "meta-llama/llama-3.1-8b-instruct"
 WRITER_PROMPT_NAME = "writer_prompt"

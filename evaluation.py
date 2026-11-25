@@ -15,10 +15,10 @@ from talk_with_data.experiment import (
     run_experiment,
     write_attempts,
 )
-from talk_with_data.generation import create_client
 from talk_with_data.metrics import summarize
 from talk_with_data.questions import load_questions
 from talk_with_data.schema import describe_schema
+from talk_with_data.text_to_sql import create_client
 from talk_with_data.utils import append_jsonl
 
 

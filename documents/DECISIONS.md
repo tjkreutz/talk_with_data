@@ -270,7 +270,7 @@ conventions (new customers, approval hours) and few-shot fixes the answer shape
 (busiest hour). Each alone also breaks something (glossary alone: `busiest_hour`,
 few-shot alone: `returning_orders_month`), and together nothing gets worse. The
 latency is unchanged (about 0.8 s median) and the prompt is about 380 words,
-kept in `data/prompts/system_prompt.txt`. The default model is now Flash Lite.
+kept in `data/prompts/text_to_sql_prompt.txt`. The default model is now Flash Lite.
 
 - The examples are six train questions. Their SQL is written for the views and
   returns exactly the train gold result.

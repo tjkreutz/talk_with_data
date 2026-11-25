@@ -3,8 +3,8 @@ from streamlit import cache_resource, chat_input, code, dataframe, markdown
 
 from talk_with_data.database import create_connection
 from talk_with_data.execution import run_query
-from talk_with_data.generation import create_client, generate_sql
 from talk_with_data.schema import describe_schema
+from talk_with_data.text_to_sql import create_client, generate_sql
 from talk_with_data.writer import write_answer
 
 PLACEHOLDER = "Ask a question about Olist orders and reviews"

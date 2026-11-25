@@ -18,9 +18,9 @@ from talk_with_data.config import (
     PREVIEW_ROWS,
 )
 from talk_with_data.execution import run_query
-from talk_with_data.generation import build_system_prompt, generate_sql
 from talk_with_data.metrics import Attempt, Outcome
 from talk_with_data.questions import Question
+from talk_with_data.text_to_sql import build_system_prompt, generate_sql
 from talk_with_data.utils import get_git_version, write_jsonl
 
 LOGGER = logging.getLogger(__name__)
