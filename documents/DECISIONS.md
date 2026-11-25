@@ -307,9 +307,10 @@ call `search_reviews(query)`, which returns the 10 most similar reviews as JSON.
 ## Writer: a small second model summarizes the answer
 
 `write_answer(client, question, sql, rows)` in `writer.py` turns the question,
-the SQL and its result (at most 20 rows) into one to three sentences, and
-`app.py` shows it above the SQL and the table. It uses a different, much cheaper
-model from the SQL step, set in `config.py`.
+the SQL and its result (at most 20 rows) into one to three sentences. It
+streams them chunk by chunk, and `app.py` shows the SQL, the table and then the
+text as it forms. It uses a different, much cheaper model from the SQL step, set
+in `config.py`.
 
 - **Model: `meta-llama/llama-3.1-8b-instruct` at temperature 0.** We compared
   eight small models on five cases (a count, a percentage, a top 3, an empty

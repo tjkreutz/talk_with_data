@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 
 from duckdb import DuckDBPyConnection
 from openai import OpenAI
@@ -10,9 +11,17 @@ from talk_with_data.writer import write_answer
 
 LOGGER = logging.getLogger(__name__)
 FAILURE = (
-    "I could not run that query. I only know about orders and reviews, "
-    "so the question may need data I do not have."
+    "I could not answer that. I only know about Olist orders and reviews, so try "
+    "a question about those, for example how many orders were delivered in 2017."
 )
+
+
+@dataclass(frozen=True)
+class Answer:
+    sql: str
+    rows: list[tuple[object, ...]] | None = None
+    text: str = ""
+    error: str | None = None
 
 
 def answer_question(
@@ -21,13 +30,37 @@ def answer_question(
     schema: str,
     question: str,
     history: Sequence[tuple[str, str]] = (),
-) -> str:
+) -> Answer:
+    *_, answer = stream_answer(connection, client, schema, question, history)
+
+    return answer
+
+
+def stream_answer(
+    connection: DuckDBPyConnection,
+    client: OpenAI,
+    schema: str,
+    question: str,
+    history: Sequence[tuple[str, str]] = (),
+) -> Iterator[Answer]:
     sql = generate_sql(client, question, schema, history=history)
+
+    yield Answer(sql=sql)
+
     result = try_query(connection, sql)
 
     if result.error is not None:
         LOGGER.info("Query failed: %s", result.error)
 
-        return FAILURE
+        yield Answer(sql=sql, rows=[], text=FAILURE, error=result.error)
 
-    return write_answer(client, question, sql, result.rows)
+        return
+
+    yield Answer(sql=sql, rows=result.rows)
+
+    text = ""
+
+    for piece in write_answer(client, question, sql, result.rows):
+        text += piece
+
+        yield Answer(sql=sql, rows=result.rows, text=text.strip())

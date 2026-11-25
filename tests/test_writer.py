@@ -1,5 +1,6 @@
 import unittest
 from datetime import date
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from talk_with_data.config import WRITER_MODEL, WRITER_PROMPT_NAME, WRITER_TEMPERATURE
@@ -7,18 +8,33 @@ from talk_with_data.utils import load_prompt
 from talk_with_data.writer import _format_request, write_answer
 
 
+def _chunk(content: str | None) -> SimpleNamespace:
+    return SimpleNamespace(
+        choices=[SimpleNamespace(delta=SimpleNamespace(content=content))]
+    )
+
+
 class TestWriter(unittest.TestCase):
     def test_write_answer(self) -> None:
         client = MagicMock()
-        message = client.chat.completions.create.return_value.choices[0].message
-        message.content = "  There were 3 orders.\n"
+        client.chat.completions.create.return_value = iter(
+            [
+                _chunk("There"),
+                _chunk(None),
+                SimpleNamespace(choices=[]),
+                _chunk(" were"),
+                _chunk(""),
+                _chunk(" 3 orders."),
+            ]
+        )
 
-        answer = write_answer(client, "How many?", "SELECT 3 AS orders", [(3,)])
+        pieces = list(write_answer(client, "How many?", "SELECT 3 AS orders", [(3,)]))
 
-        self.assertEqual(answer, "There were 3 orders.")
+        self.assertEqual(pieces, ["There", " were", " 3 orders."])
         call = client.chat.completions.create.call_args.kwargs
         self.assertEqual(call["model"], WRITER_MODEL)
         self.assertEqual(call["temperature"], WRITER_TEMPERATURE)
+        self.assertTrue(call["stream"])
         self.assertEqual(
             call["messages"][0],
             {"role": "system", "content": load_prompt(WRITER_PROMPT_NAME)},
@@ -29,9 +45,9 @@ class TestWriter(unittest.TestCase):
             _format_request("How many?", "SELECT 3 AS orders", [(3,)]),
         )
 
-        message.content = None
+        client.chat.completions.create.return_value = iter([])
 
-        self.assertEqual(write_answer(client, "?", "SELECT 1", []), "")
+        self.assertEqual(list(write_answer(client, "?", "SELECT 1", [])), [])
 
     def test_format_request(self) -> None:
         request = _format_request(
