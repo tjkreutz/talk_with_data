@@ -33,6 +33,15 @@ App settings (model, prompt, paths, views, evaluation and statistics parameters)
 The LLM is reached through an OpenAI-compatible API (we use OpenRouter). Copy
 `.env.example` to `.env` and fill in `LLM_API_KEY`.
 
+## Chat
+
+```sh
+uv run streamlit run app.py
+```
+
+Opens a chat in the browser. For now each reply shows the generated SQL and
+the table it returns, without a written answer.
+
 ## Evaluation
 
 ```sh

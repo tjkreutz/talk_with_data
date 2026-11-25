@@ -6,6 +6,7 @@ dependencies = [
     "duckdb>=2.0.1,<3.0.0",
     "openai>=3.59.0,<4.0.0",
     "python-dotenv>=1.2.4",
+    "streamlit>=1.67.0",
 ]
 
 [dependency-groups]
