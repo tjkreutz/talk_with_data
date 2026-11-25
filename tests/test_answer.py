@@ -8,6 +8,7 @@ from duckdb import DuckDBPyConnection, connect
 from talk_with_data.answer import FAILURE, Answer, answer_question, stream_answer
 
 PIECES = ["There ", "is ", "one row."]
+HISTORY = (("How many in 2017?", "SELECT 1"),)
 
 
 class TestAnswer(unittest.TestCase):
@@ -17,7 +18,9 @@ class TestAnswer(unittest.TestCase):
         self.client = MagicMock()
 
     @contextmanager
-    def _model(self, sql: str) -> Iterator[MagicMock]:
+    def _model(
+        self, sql: str, history: tuple[tuple[str, str], ...] = ()
+    ) -> Iterator[MagicMock]:
         write = MagicMock(side_effect=lambda *arguments: iter(PIECES))
 
         with (
@@ -26,7 +29,9 @@ class TestAnswer(unittest.TestCase):
         ):
             yield write
 
-        generate.assert_called_once_with(self.client, "How many?", "SCHEMA")
+        generate.assert_called_once_with(
+            self.client, "How many?", "SCHEMA", history=history
+        )
 
     def _ask(self) -> tuple[DuckDBPyConnection, MagicMock, str, str]:
         return self.connection, self.client, "SCHEMA", "How many?"
@@ -50,6 +55,11 @@ class TestAnswer(unittest.TestCase):
         self.assertTrue(answer.error)
         write.assert_not_called()
 
+        with self._model("SELECT n FROM t", HISTORY):
+            answer = answer_question(*self._ask(), HISTORY)
+
+        self.assertEqual(answer.text, "There is one row.")
+
     def test_stream_answer(self) -> None:
         with self._model("SELECT n FROM t"):
             stages = list(stream_answer(*self._ask()))
@@ -64,6 +74,11 @@ class TestAnswer(unittest.TestCase):
                 Answer(sql="SELECT n FROM t", rows=[(1,)], text="There is one row."),
             ],
         )
+
+        with self._model("SELECT n FROM t", HISTORY):
+            followed = list(stream_answer(*self._ask(), HISTORY))
+
+        self.assertEqual(len(followed), 5)
 
         for sql in (
             "SELECT * FROM missing",

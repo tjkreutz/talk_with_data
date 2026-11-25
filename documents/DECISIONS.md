@@ -321,3 +321,26 @@ in `config.py`.
   wrong decimal formats, invented numbers, the wrong language.
 - **The prompt is a file,** `data/prompts/writer_prompt.txt`. Not evaluated yet,
   so the writer is only checked by that small comparison.
+
+## History awareness: follow-up questions
+
+`generate_sql(..., history=...)` lets the text-to-SQL model resolve follow-ups
+such as "and in 2018?". Each earlier turn goes in as a user message (the
+question) and an assistant message (the SQL that answered it), ahead of the new
+question.
+
+- **Bounded to the last 5 turns** (`HISTORY_TURNS` in `config.py`).
+- **Failed turns are left out,** so bad SQL is not repeated as an example.
+- **Only the SQL step sees the history.** The writer sees the current SQL, which
+  already carries the context.
+- **Optional, off by default,** so the prompt, the eval and every recorded
+  experiment are unchanged.
+
+**Limitation: we never tested this in a structured way.** The eval set has only
+single questions, so nothing measures follow-ups. All we have is ad hoc checking by hand: one
+four-turn conversation that resolved correctly (2017, then 2018, then São Paulo,
+then the review score for those), and one follow-up without history, which made
+up a Niterói filter, probably copied from a few-shot example. The limit of 5
+turns, leaving out failed turns, and not giving the writer the history are
+guesses, not measured choices. Doing it properly would mean a set of multi-turn
+questions with gold SQL for the last turn, run with and without history.

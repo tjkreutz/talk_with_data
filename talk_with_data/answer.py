@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
 from duckdb import DuckDBPyConnection
@@ -25,17 +25,25 @@ class Answer:
 
 
 def answer_question(
-    connection: DuckDBPyConnection, client: OpenAI, schema: str, question: str
+    connection: DuckDBPyConnection,
+    client: OpenAI,
+    schema: str,
+    question: str,
+    history: Sequence[tuple[str, str]] = (),
 ) -> Answer:
-    *_, answer = stream_answer(connection, client, schema, question)
+    *_, answer = stream_answer(connection, client, schema, question, history)
 
     return answer
 
 
 def stream_answer(
-    connection: DuckDBPyConnection, client: OpenAI, schema: str, question: str
+    connection: DuckDBPyConnection,
+    client: OpenAI,
+    schema: str,
+    question: str,
+    history: Sequence[tuple[str, str]] = (),
 ) -> Iterator[Answer]:
-    sql = generate_sql(client, question, schema)
+    sql = generate_sql(client, question, schema, history=history)
 
     yield Answer(sql=sql)
 
