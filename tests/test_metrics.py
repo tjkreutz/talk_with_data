@@ -12,7 +12,6 @@ from talk_with_data.metrics import (
     _compute_run_accuracies,
     _compute_template_accuracies,
     _count_consistency,
-    _group_by,
     summarize,
 )
 
@@ -109,14 +108,6 @@ class TestMetrics(unittest.TestCase):
         self.assertGreaterEqual(lower, min(values))
         self.assertLessEqual(upper, max(values))
         self.assertEqual((lower, upper), _bootstrap_interval(values, Random(1)))
-
-    def test_group_by(self) -> None:
-        groups = _group_by(self.attempts, lambda item: item.template)
-
-        self.assertEqual(list(groups), ["a", "b"])
-        self.assertEqual(len(groups["a"]), 4)
-        self.assertEqual(groups["b"], self.attempts[4:])
-        self.assertEqual(_group_by([], lambda item: item.run), {})
 
 
 if __name__ == "__main__":

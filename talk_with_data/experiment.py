@@ -1,4 +1,3 @@
-import json
 import logging
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -6,7 +5,6 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
-from subprocess import run
 
 from duckdb import DuckDBPyConnection, Error
 from openai import OpenAI
@@ -17,6 +15,7 @@ from talk_with_data.generation import MODEL, SYSTEM_PROMPT, generate_sql
 from talk_with_data.metrics import Attempt, Outcome
 from talk_with_data.questions import Question
 from talk_with_data.schema import MODEL_TABLES
+from talk_with_data.utils import get_git_version, write_jsonl
 
 LOGGER = logging.getLogger(__name__)
 MAX_WORKERS = 8
@@ -97,7 +96,7 @@ def describe_experiment(name: str, split: str, schema: str) -> dict[str, object]
         "id": f"{name}-{now:%Y%m%dT%H%M%S}",
         "experiment": name,
         "timestamp": now.isoformat(timespec="seconds"),
-        "git_commit": _get_git_version(),
+        "git_commit": get_git_version(),
         "model": MODEL,
         "prompt_hash": _hash_prompt(schema),
         "tables": list(MODEL_TABLES),
@@ -105,18 +104,8 @@ def describe_experiment(name: str, split: str, schema: str) -> dict[str, object]
     }
 
 
-def append_record(record: dict[str, object], path: Path) -> None:
-    with path.open("a", encoding="utf-8") as file:
-        file.write(f"{json.dumps(record, ensure_ascii=False)}\n")
-
-
 def write_attempts(attempts: Sequence[Attempt], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    lines = (
-        json.dumps(asdict(attempt), ensure_ascii=False, default=str)
-        for attempt in attempts
-    )
-    path.write_text("".join(f"{line}\n" for line in lines), encoding="utf-8")
+    write_jsonl((asdict(attempt) for attempt in attempts), path)
 
 
 def _preview_rows(rows: Sequence[Sequence[object]]) -> list[list[object]]:
@@ -127,17 +116,3 @@ def _hash_prompt(schema: str) -> str:
     prompt = SYSTEM_PROMPT.format(schema=schema)
 
     return sha256(prompt.encode()).hexdigest()[:HASH_LENGTH]
-
-
-def _get_git_version() -> str:
-    commit = run(
-        ["git", "rev-parse", "--short", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    changes = run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
-    ).stdout.strip()
-
-    return f"{commit}+dirty" if changes else commit

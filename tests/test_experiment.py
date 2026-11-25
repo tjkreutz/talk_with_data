@@ -3,7 +3,6 @@ import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
-from subprocess import CompletedProcess
 from unittest.mock import MagicMock, patch
 
 from duckdb import connect
@@ -11,10 +10,8 @@ from duckdb import connect
 from talk_with_data.experiment import (
     _evaluate_attempt,
     _execute_attempt,
-    _get_git_version,
     _hash_prompt,
     _preview_rows,
-    append_record,
     describe_experiment,
     run_experiment,
     write_attempts,
@@ -23,8 +20,7 @@ from talk_with_data.generation import MODEL
 from talk_with_data.metrics import Attempt
 from talk_with_data.questions import Question
 
-RUN = "talk_with_data.experiment.run"
-GIT_VERSION = "talk_with_data.experiment._get_git_version"
+GIT_VERSION = "talk_with_data.experiment.get_git_version"
 
 
 def _make_question(gold_sql: str) -> Question:
@@ -135,21 +131,6 @@ class TestExperiment(unittest.TestCase):
         self.assertEqual(description["split"], "dev")
         self.assertTrue(str(description["timestamp"]).endswith("+00:00"))
 
-    def test_append_record(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "experiments.jsonl"
-            append_record({"experiment": "a", "accuracy": 0.5}, path)
-            append_record({"experiment": "é"}, path)
-            lines = path.read_text(encoding="utf-8").splitlines()
-
-        self.assertEqual(
-            [json.loads(line) for line in lines],
-            [
-                {"experiment": "a", "accuracy": 0.5},
-                {"experiment": "é"},
-            ],
-        )
-
     def test_write_attempts(self) -> None:
         attempt = Attempt(
             question_id="q1",
@@ -195,18 +176,6 @@ class TestExperiment(unittest.TestCase):
         self.assertEqual(len(first), 8)
         self.assertEqual(first, _hash_prompt("CREATE TABLE t(a INT);"))
         self.assertNotEqual(first, _hash_prompt("CREATE TABLE t(b INT);"))
-
-    def test_get_git_version(self) -> None:
-        def completed(stdout: str) -> CompletedProcess[str]:
-            return CompletedProcess(args=[], returncode=0, stdout=stdout)
-
-        with patch(RUN, side_effect=[completed("abc1234\n"), completed("")]):
-            self.assertEqual(_get_git_version(), "abc1234")
-
-        with patch(
-            RUN, side_effect=[completed("abc1234\n"), completed(" M file.py\n")]
-        ):
-            self.assertEqual(_get_git_version(), "abc1234+dirty")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,6 @@ from time import perf_counter
 
 from talk_with_data.database import create_connection
 from talk_with_data.experiment import (
-    append_record,
     describe_experiment,
     run_experiment,
     write_attempts,
@@ -13,6 +12,7 @@ from talk_with_data.generation import create_client
 from talk_with_data.metrics import summarize
 from talk_with_data.questions import load_questions
 from talk_with_data.schema import describe_schema
+from talk_with_data.utils import append_jsonl
 
 EXPERIMENT = "baseline"
 SPLIT = "dev"
@@ -39,7 +39,7 @@ def main() -> None:
         **summarize(attempts),
         "duration_seconds": round(perf_counter() - started, 1),
     }
-    append_record(record, EXPERIMENTS_PATH)
+    append_jsonl(record, EXPERIMENTS_PATH)
     write_attempts(attempts, RUNS_DIR / f"{description['id']}.jsonl")
     print(json.dumps(record, indent=2, ensure_ascii=False))
 

@@ -2,6 +2,8 @@ from collections.abc import Sequence
 
 from duckdb import DuckDBPyConnection
 
+from talk_with_data.utils import load_sql
+
 MODEL_TABLES = ("order_facts", "review_facts")
 
 
@@ -14,16 +16,7 @@ def describe_schema(
 
 
 def _get_create_statement(connection: DuckDBPyConnection, table: str) -> str:
-    rows = connection.execute(
-        """
-        SELECT t.table_type, c.column_name, c.data_type
-        FROM information_schema.tables t
-        JOIN information_schema.columns c USING (table_schema, table_name)
-        WHERE t.table_name = ?
-        ORDER BY c.ordinal_position
-        """,
-        [table],
-    ).fetchall()
+    rows = connection.execute(load_sql("table_columns"), [table]).fetchall()
 
     if not rows:
         raise ValueError(f"Unknown table: {table}")
