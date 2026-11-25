@@ -2,7 +2,7 @@ import unittest
 
 from duckdb import connect
 
-from talk_with_data.schema import describe_schema, get_create_statement
+from talk_with_data.schema import _get_create_statement, describe_schema
 
 
 class TestSchema(unittest.TestCase):
@@ -24,12 +24,12 @@ class TestSchema(unittest.TestCase):
 
     def test_get_create_statement(self) -> None:
         self.assertEqual(
-            get_create_statement(self.connection, "beta"),
+            _get_create_statement(self.connection, "beta"),
             "CREATE TABLE beta(created TIMESTAMP);",
         )
 
         with self.assertRaises(ValueError):
-            get_create_statement(self.connection, "gamma")
+            _get_create_statement(self.connection, "gamma")
 
 
 if __name__ == "__main__":

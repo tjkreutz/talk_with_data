@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from talk_with_data.generation import (
     MODEL,
-    extract_sql,
+    _extract_sql,
     generate_sql,
 )
 
@@ -32,13 +32,13 @@ class TestGeneration(unittest.TestCase):
         self.assertEqual(generate_sql(client, question="?", schema=""), "")
 
     def test_extract_sql(self) -> None:
-        self.assertEqual(extract_sql("```sql\nSELECT 1\n```"), "SELECT 1")
-        self.assertEqual(extract_sql("```\nSELECT 2\n```"), "SELECT 2")
+        self.assertEqual(_extract_sql("```sql\nSELECT 1\n```"), "SELECT 1")
+        self.assertEqual(_extract_sql("```\nSELECT 2\n```"), "SELECT 2")
         self.assertEqual(
-            extract_sql("Sure!\n```sql\nSELECT 3;\n```\nDone."), "SELECT 3;"
+            _extract_sql("Sure!\n```sql\nSELECT 3;\n```\nDone."), "SELECT 3;"
         )
-        self.assertEqual(extract_sql("  SELECT 4  "), "SELECT 4")
-        self.assertEqual(extract_sql(""), "")
+        self.assertEqual(_extract_sql("  SELECT 4  "), "SELECT 4")
+        self.assertEqual(_extract_sql(""), "")
 
 
 if __name__ == "__main__":
