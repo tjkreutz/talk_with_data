@@ -1,6 +1,7 @@
 import json
 from time import perf_counter
 
+from talk_with_data import create_client, create_connection, describe_schema
 from talk_with_data.config import (
     EXPERIMENT,
     EXPERIMENTS_PATH,
@@ -9,7 +10,6 @@ from talk_with_data.config import (
     RUNS_DIR,
     SPLIT,
 )
-from talk_with_data.database import create_connection
 from talk_with_data.experiment import (
     describe_experiment,
     run_experiment,
@@ -17,8 +17,6 @@ from talk_with_data.experiment import (
 )
 from talk_with_data.metrics import summarize
 from talk_with_data.questions import load_questions
-from talk_with_data.schema import describe_schema
-from talk_with_data.text_to_sql import create_client
 from talk_with_data.utils import append_jsonl
 
 

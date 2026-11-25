@@ -1,7 +1,7 @@
 import json
 from collections.abc import Sequence
 
-from duckdb import CatalogException, DuckDBPyConnection
+from duckdb import DuckDBPyConnection
 from openai import OpenAI
 
 from talk_with_data.config import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL, SEARCH_RESULTS
@@ -22,12 +22,7 @@ def search_reviews(
 
     vector = _embed_query(client, query)
 
-    try:
-        relation = connection.execute(
-            load_sql("search_reviews"), [vector, SEARCH_RESULTS]
-        )
-    except CatalogException as error:
-        raise RuntimeError("The review vectors file is missing") from error
+    relation = connection.execute(load_sql("search_reviews"), [vector, SEARCH_RESULTS])
 
     return _to_dicts(relation.description, relation.fetchall())
 

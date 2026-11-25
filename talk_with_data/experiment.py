@@ -14,8 +14,8 @@ from talk_with_data.config import (
     HASH_LENGTH,
     MAX_WORKERS,
     MODEL,
-    MODEL_TABLES,
     PREVIEW_ROWS,
+    VIEWS,
 )
 from talk_with_data.execution import run_query, try_query
 from talk_with_data.metrics import Attempt, Outcome
@@ -103,7 +103,7 @@ def describe_experiment(name: str, split: str, schema: str) -> dict[str, object]
         "git_commit": get_git_version(),
         "model": MODEL,
         "prompt_hash": _hash_prompt(schema),
-        "tables": list(MODEL_TABLES),
+        "tables": list(VIEWS),
         "split": split,
     }
 

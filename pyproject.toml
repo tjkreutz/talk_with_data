@@ -1,10 +1,11 @@
 [project]
-name = "talkwithdata"
+name = "talk-with-data"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "duckdb>=2.0.1,<3.0.0",
     "openai>=3.59.0,<4.0.0",
+    "pydantic>=2.14.4",
     "python-dotenv>=1.2.4",
     "streamlit>=1.67.0",
 ]
