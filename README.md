@@ -24,7 +24,7 @@ uv run python main.py
 ```
 
 Asks for a question, prints the written answer, and repeats until you enter an
-empty line. It prints only the answer and does not remember earlier questions.
+empty line.
 
 ### Browser chat
 
@@ -32,8 +32,7 @@ empty line. It prints only the answer and does not remember earlier questions.
 uv run streamlit run app.py
 ```
 
-Each reply shows the generated SQL, the result table and a written answer, and
-the conversation is remembered, so follow-ups work.
+Each reply shows the generated SQL, the result table and a written answer.
 
 ## What you can ask
 
@@ -50,8 +49,8 @@ instead of guessing.
 
 1. **Text to SQL.** Gemini 3.5 Flash Lite writes a DuckDB query. It sees the
    columns of two views, `order_facts` and `review_facts`, a short glossary and
-   a few examples (`data/prompts/text_to_sql_prompt.txt`), and in the browser
-   chat the last five questions with their SQL. For free-text questions about
+   a few examples (`data/prompts/text_to_sql_prompt.txt`), and the last five
+   questions of the conversation with their SQL. For free-text questions about
    reviews it can call a semantic search over the review texts first.
 2. **Run.** The query runs on an in-memory DuckDB database built from the CSVs
    at start-up. Only a single `SELECT` is accepted.
