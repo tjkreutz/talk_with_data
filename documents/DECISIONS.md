@@ -33,3 +33,12 @@ tuning, and test is run rarely to report the final numbers.
   discussion board (customer_id vs customer_unique_id, the 24 November 2017
   spike, review duplicates, the data being a sample) and our own checks of the
   CSVs.
+
+## Storage
+
+We load the raw CSVs into an in-memory DuckDB database, one table per CSV named
+after its file (`olist_orders_dataset.csv` becomes `orders`). DuckDB reads CSVs
+directly and runs analytical SQL fast, and there is no database file to keep in
+sync with `data/raw/`. Loading all 8 files takes under half a second. We rely on
+DuckDB's type detection: timestamps become `TIMESTAMP`, and zip prefixes stay
+text, so their leading zeros survive.
