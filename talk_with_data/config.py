@@ -3,6 +3,11 @@ from pathlib import Path
 MODEL = "google/gemini-3.5-flash-lite"
 PROMPT_NAME = "system_prompt"
 
+WRITER_MODEL = "meta-llama/llama-3.1-8b-instruct"
+WRITER_PROMPT_NAME = "writer_prompt"
+WRITER_TEMPERATURE = 0
+WRITER_MAX_ROWS = 20
+
 EMBEDDING_MODEL = "mongodb/voyage-4-lite"
 EMBEDDING_DIMENSIONS = 256
 SEARCH_RESULTS = 10

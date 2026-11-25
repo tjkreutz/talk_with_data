@@ -40,8 +40,8 @@ The LLM is reached through an OpenAI-compatible API (we use OpenRouter). Copy
 uv run streamlit run app.py
 ```
 
-Opens a chat in the browser. For now each reply shows the generated SQL and
-the table it returns, without a written answer.
+Opens a chat in the browser. Each reply shows a short written answer, the
+generated SQL and the table it returns.
 
 ## Evaluation
 

@@ -302,3 +302,21 @@ call `search_reviews(query)`, which returns the 10 most similar reviews as JSON.
   model's arguments back into, plus a function registered in `make_tools`.
   Malformed arguments now raise from `parse()` instead of going back to the model. The prompt hash does not show whether it was on, so
   record that if we ever evaluate with it. Not evaluated yet.
+
+
+## Writer: a small second model summarizes the answer
+
+`write_answer(client, question, sql, rows)` in `writer.py` turns the question,
+the SQL and its result (at most 20 rows) into one to three sentences, and
+`app.py` shows it above the SQL and the table. It uses a different, much cheaper
+model from the SQL step, set in `config.py`.
+
+- **Model: `meta-llama/llama-3.1-8b-instruct` at temperature 0.** We compared
+  eight small models on five cases (a count, a percentage, a top 3, an empty
+  result, Portuguese review text). Llama was the fastest (about 0.2 s, against
+  1.7 s for Mistral Small 24B) and answered in the language of the question. At
+  the default temperature it once invented a number, and at temperature 0 it
+  invented none in 5 of 5 runs. Gemma 3, Ministral and Nova Micro were sloppier:
+  wrong decimal formats, invented numbers, the wrong language.
+- **The prompt is a file,** `data/prompts/writer_prompt.txt`. Not evaluated yet,
+  so the writer is only checked by that small comparison.
