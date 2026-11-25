@@ -10,7 +10,7 @@ from openai.types.chat import (
 from openai.types.chat.parsed_function_tool_call import ParsedFunction
 
 from talk_with_data.config import MAX_TOOL_ROUNDS, MODEL
-from talk_with_data.generation import (
+from talk_with_data.text_to_sql import (
     _complete,
     _extract_sql,
     build_system_prompt,
@@ -18,7 +18,7 @@ from talk_with_data.generation import (
 )
 from talk_with_data.tools import TOOLS, SearchReviews
 
-LOAD_DOTENV = "talk_with_data.generation.load_dotenv"
+LOAD_DOTENV = "talk_with_data.text_to_sql.load_dotenv"
 
 
 def _tool_message(*queries: str) -> ParsedChatCompletionMessage[None]:
