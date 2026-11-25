@@ -2,25 +2,24 @@ from collections.abc import Sequence
 
 from duckdb import DuckDBPyConnection
 
-from talk_with_data.config import MODEL_TABLES
+from talk_with_data.config import VIEWS
 from talk_with_data.utils import load_sql
 
 
 def describe_schema(
-    connection: DuckDBPyConnection, tables: Sequence[str] = MODEL_TABLES
+    connection: DuckDBPyConnection, views: Sequence[str] = VIEWS
 ) -> str:
-    statements = (_get_create_statement(connection, table) for table in tables)
+    statements = (_get_create_statement(connection, view) for view in views)
 
     return "\n".join(statements)
 
 
-def _get_create_statement(connection: DuckDBPyConnection, table: str) -> str:
-    rows = connection.execute(load_sql("table_columns"), [table]).fetchall()
+def _get_create_statement(connection: DuckDBPyConnection, view: str) -> str:
+    rows = connection.execute(load_sql("view_columns"), [view]).fetchall()
 
     if not rows:
-        raise ValueError(f"Unknown table: {table}")
+        raise ValueError(f"Unknown view: {view}")
 
-    kind = "VIEW" if rows[0][0] == "VIEW" else "TABLE"
-    columns = ", ".join(f"{name} {data_type}" for _, name, data_type in rows)
+    columns = ", ".join(f"{name} {data_type}" for name, data_type in rows)
 
-    return f"CREATE {kind} {table}({columns});"
+    return f"CREATE VIEW {view}({columns});"

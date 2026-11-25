@@ -8,32 +8,26 @@ from talk_with_data.schema import _get_create_statement, describe_schema
 class TestSchema(unittest.TestCase):
     def setUp(self) -> None:
         self.connection = connect()
-        self.connection.execute("CREATE TABLE alpha (id INTEGER, name VARCHAR)")
-        self.connection.execute("CREATE TABLE beta (created TIMESTAMP)")
+        self.connection.execute("CREATE VIEW alpha AS SELECT 1 AS id, 'x' AS name")
         self.connection.execute(
-            "CREATE VIEW gamma AS SELECT 1 AS n, DATE '2018-01-01' AS d"
+            "CREATE VIEW beta AS SELECT TIMESTAMP '2018-01-01' AS created"
         )
 
     def test_describe_schema(self) -> None:
         self.assertEqual(
-            describe_schema(self.connection, tables=("beta", "alpha", "gamma")),
-            "CREATE TABLE beta(created TIMESTAMP);\n"
-            "CREATE TABLE alpha(id INTEGER, name VARCHAR);\n"
-            "CREATE VIEW gamma(n INTEGER, d DATE);",
+            describe_schema(self.connection, views=("beta", "alpha")),
+            "CREATE VIEW beta(created TIMESTAMP);\n"
+            "CREATE VIEW alpha(id INTEGER, name VARCHAR);",
         )
-        self.assertEqual(describe_schema(self.connection, tables=()), "")
+        self.assertEqual(describe_schema(self.connection, views=()), "")
 
         with self.assertRaises(ValueError):
             describe_schema(self.connection)
 
     def test_get_create_statement(self) -> None:
         self.assertEqual(
-            _get_create_statement(self.connection, "beta"),
-            "CREATE TABLE beta(created TIMESTAMP);",
-        )
-        self.assertEqual(
-            _get_create_statement(self.connection, "gamma"),
-            "CREATE VIEW gamma(n INTEGER, d DATE);",
+            _get_create_statement(self.connection, "alpha"),
+            "CREATE VIEW alpha(id INTEGER, name VARCHAR);",
         )
 
         with self.assertRaises(ValueError):

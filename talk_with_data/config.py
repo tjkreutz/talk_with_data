@@ -22,7 +22,6 @@ RUNS_DIR = Path("data/runs")
 VECTORS_PATH = Path("data/vectors/review_embeddings.parquet")
 
 VIEWS = ("order_facts", "review_facts")
-MODEL_TABLES = VIEWS
 
 EXPERIMENT = "baseline"
 SPLIT = "dev"
