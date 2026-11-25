@@ -295,13 +295,35 @@ call `search_reviews(query)`, which returns the 10 most similar reviews as JSON.
   `data/vectors/review_embeddings.parquet` (48 MB, under GitHub's 50 MB warning),
   and `create_connection` loads it as a table. There is no build script, so
   changing the model or dimensions means regenerating the file by hand.
-- **Tools are optional in `generate_sql(..., tools=...)`,** so the prompt and
-  recorded experiments are unchanged. We use the OpenAI SDK's own classes and no
-  tool class of our own: a tool is a pydantic model for its arguments, which
-  `pydantic_function_tool` turns into the definition and `parse()` turns the
-  model's arguments back into, plus a function registered in `make_tools`.
-  Malformed arguments now raise from `parse()` instead of going back to the model. The prompt hash does not show whether it was on, so
-  record that if we ever evaluate with it. Not evaluated yet.
+- **Tools are optional in `generate_sql(..., tools=...)`.** We use the OpenAI
+  SDK's own classes and no tool class of our own: a tool is a pydantic model for
+  its arguments, which `pydantic_function_tool` turns into the definition and
+  `parse()` turns the model's arguments back into, plus a function registered
+  in `make_tools`.
+- **`answer_question` passes the tools,** so the terminal chat can search.
+  Experiments (`run_experiment`) still run without them, so the 300 gold
+  questions and the recorded numbers are unaffected; the prompt hash changed
+  with the one glossary line that tells the model when to search.
+- **Seen in a hand test of 4 review questions and 4 plain ones** (not an
+  evaluation): with only the tool's description, the model searched up to three
+  times, then ignored the ids and fell back to `LIKE` or an aggregate over
+  `review_facts`, or selected `review_text`, a column the view does not have.
+  Telling it to search once, then select `review_comment_message` for the
+  returned ids and never to search text with `LIKE`, fixed all four: one search
+  each, ten reviews back, about 3 s. Plain questions never searched and took
+  1 to 3 s.
+- **The writer was the weak step on review answers,** so its prompt got rules
+  for them. Before: it counted 9 reviews where 10 came back, answered an
+  English question in Portuguese, dumped ten order ids, and wrote "63%" for the
+  result 0.63. After, on the same questions: it describes the common themes and
+  score range, translates quotes into the language of the question (German
+  included), names at most three ids, and writes "0.63%". The percentage rule
+  only worked once it had a worked example; a plain rule was ignored by the 8B
+  model.
+- **Still open:** the model sometimes aggregates over the ten search results
+  ("90% of reviews are positive" about packaging), which is a statistic about
+  ten reviews, not all of them. That is for the SQL prompt, not the writer.
+  Twice it also searched twice despite "once".
 
 
 ## Writer: a small second model summarizes the answer

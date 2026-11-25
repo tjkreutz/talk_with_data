@@ -10,6 +10,8 @@ from talk_with_data.answer import FAILURE, Answer, answer_question, stream_answe
 PIECES = ["There ", "is ", "one row."]
 HISTORY = (("How many in 2017?", "SELECT 1"),)
 
+TOOLS = {"search_reviews": MagicMock()}
+
 
 class TestAnswer(unittest.TestCase):
     def setUp(self) -> None:
@@ -24,13 +26,14 @@ class TestAnswer(unittest.TestCase):
         write = MagicMock(side_effect=lambda *arguments: iter(PIECES))
 
         with (
+            patch("talk_with_data.answer.make_tools", return_value=TOOLS),
             patch("talk_with_data.answer.generate_sql", return_value=sql) as generate,
             patch("talk_with_data.answer.write_answer", write),
         ):
             yield write
 
         generate.assert_called_once_with(
-            self.client, "How many?", "SCHEMA", history=history
+            self.client, "How many?", "SCHEMA", tools=TOOLS, history=history
         )
 
     def _ask(self) -> tuple[DuckDBPyConnection, MagicMock, str, str]:

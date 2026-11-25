@@ -7,6 +7,7 @@ from openai import OpenAI
 
 from talk_with_data.execution import try_query
 from talk_with_data.text_to_sql import generate_sql
+from talk_with_data.tools import make_tools
 from talk_with_data.writer import write_answer
 
 LOGGER = logging.getLogger(__name__)
@@ -43,7 +44,8 @@ def stream_answer(
     question: str,
     history: Sequence[tuple[str, str]] = (),
 ) -> Iterator[Answer]:
-    sql = generate_sql(client, question, schema, history=history)
+    tools = make_tools(connection, client)
+    sql = generate_sql(client, question, schema, tools=tools, history=history)
 
     yield Answer(sql=sql)
 
