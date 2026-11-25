@@ -15,8 +15,7 @@ uv sync
 cp .env.example .env
 ```
 
-Then put your key in `.env` as `LLM_API_KEY`. The data is already in the
-repository, so there is nothing to download.
+Then put your key in `.env` as `LLM_API_KEY`.
 
 ### Terminal chat
 
