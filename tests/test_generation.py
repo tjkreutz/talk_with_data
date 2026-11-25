@@ -2,45 +2,47 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from openai.types.chat import ChatCompletionMessage, ChatCompletionMessageParam
+from openai.types.chat import (
+    ChatCompletionMessageParam,
+    ParsedChatCompletionMessage,
+    ParsedFunctionToolCall,
+)
+from openai.types.chat.parsed_function_tool_call import ParsedFunction
 
 from talk_with_data.config import MAX_TOOL_ROUNDS, MODEL
 from talk_with_data.generation import (
-    SEARCH_TOOL,
-    _call_search,
     _complete,
     _extract_sql,
-    _run_tool_calls,
     build_system_prompt,
     generate_sql,
 )
+from talk_with_data.tools import TOOLS, SearchReviews
 
 LOAD_DOTENV = "talk_with_data.generation.load_dotenv"
 
 
-def _tool_message(*queries: str) -> ChatCompletionMessage:
-    return ChatCompletionMessage.model_validate(
-        {
-            "role": "assistant",
-            "content": None,
-            "tool_calls": [
-                {
-                    "id": f"call_{index}",
-                    "type": "function",
-                    "function": {
-                        "name": "search_reviews",
-                        "arguments": query
-                        if query.startswith("{")
-                        else '{"query": "' + query + '"}',
-                    },
-                }
-                for index, query in enumerate(queries, start=1)
-            ],
-        }
+def _tool_message(*queries: str) -> ParsedChatCompletionMessage[None]:
+    return ParsedChatCompletionMessage[None](
+        role="assistant",
+        content=None,
+        tool_calls=[
+            ParsedFunctionToolCall(
+                id=f"call_{index}",
+                type="function",
+                function=ParsedFunction(
+                    name="search_reviews",
+                    arguments='{"query": "' + query + '"}',
+                    parsed_arguments=SearchReviews(query=query),
+                ),
+            )
+            for index, query in enumerate(queries, start=1)
+        ],
     )
 
 
-def _response(message: ChatCompletionMessage | SimpleNamespace) -> SimpleNamespace:
+def _response(
+    message: ParsedChatCompletionMessage[None] | SimpleNamespace,
+) -> SimpleNamespace:
     return SimpleNamespace(choices=[SimpleNamespace(message=message)])
 
 
@@ -72,20 +74,22 @@ class TestGeneration(unittest.TestCase):
 
     def test_generate_sql_with_search(self) -> None:
         client = MagicMock()
-        client.chat.completions.create.side_effect = [
+        client.chat.completions.parse.side_effect = [
             _response(_tool_message("late delivery")),
             _response(_answer("SELECT 2")),
         ]
-        search = MagicMock(return_value='[{"review_id": "r1"}]')
+        run = MagicMock(return_value='[{"review_id": "r1"}]')
 
-        sql = generate_sql(client, question="Q?", schema="S", search=search)
+        sql = generate_sql(
+            client, question="Q?", schema="S", tools={"search_reviews": run}
+        )
 
         self.assertEqual(sql, "SELECT 2")
-        search.assert_called_once_with("late delivery")
+        run.assert_called_once_with({"query": "late delivery"})
         first, second = (
-            call.kwargs for call in client.chat.completions.create.call_args_list
+            call.kwargs for call in client.chat.completions.parse.call_args_list
         )
-        self.assertEqual(first["tools"], [SEARCH_TOOL])
+        self.assertEqual(first["tools"], [TOOLS["search_reviews"]])
         self.assertEqual(second["messages"][-2]["role"], "assistant")
         self.assertEqual(second["messages"][-2]["tool_calls"][0]["id"], "call_1")
         self.assertEqual(
@@ -99,72 +103,39 @@ class TestGeneration(unittest.TestCase):
 
     def test_generate_sql_stops_after_the_tool_rounds(self) -> None:
         client = MagicMock()
-        client.chat.completions.create.side_effect = [
-            *[_response(_tool_message("x")) for _ in range(MAX_TOOL_ROUNDS)],
-            _response(_answer("SELECT 3")),
+        client.chat.completions.parse.side_effect = [
+            _response(_tool_message("x")) for _ in range(MAX_TOOL_ROUNDS)
         ]
+        client.chat.completions.create.return_value = _response(_answer("SELECT 3"))
+        tools = {"search_reviews": MagicMock(return_value="[]")}
 
-        sql = generate_sql(client, "Q?", "S", search=MagicMock(return_value="[]"))
+        sql = generate_sql(client, "Q?", "S", tools=tools)
 
         self.assertEqual(sql, "SELECT 3")
-        self.assertEqual(client.chat.completions.create.call_count, MAX_TOOL_ROUNDS + 1)
+        self.assertEqual(client.chat.completions.parse.call_count, MAX_TOOL_ROUNDS)
         self.assertNotIn("tools", client.chat.completions.create.call_args.kwargs)
 
     def test_complete(self) -> None:
         client = MagicMock()
-        client.chat.completions.create.return_value = _response(_answer("SELECT 1"))
+        client.chat.completions.parse.return_value = _response(_answer("SELECT 1"))
+        client.chat.completions.create.return_value = _response(_answer("SELECT 2"))
         messages: list[ChatCompletionMessageParam] = [{"role": "user", "content": "Q?"}]
+        definitions = [TOOLS["search_reviews"]]
 
-        message = _complete(client, messages, [SEARCH_TOOL])
+        with_tools = _complete(client, messages, definitions)
 
-        self.assertEqual(message.content, "```sql\nSELECT 1\n```")
-        self.assertEqual(
-            client.chat.completions.create.call_args.kwargs["tools"], [SEARCH_TOOL]
-        )
+        self.assertEqual(with_tools.content, "```sql\nSELECT 1\n```")
+        parse_call = client.chat.completions.parse.call_args.kwargs
+        self.assertEqual(parse_call["tools"], definitions)
+        self.assertEqual(parse_call["model"], MODEL)
+        client.chat.completions.create.assert_not_called()
 
-        _complete(client, messages, [])
+        without_tools = _complete(client, messages, [])
 
-        self.assertNotIn("tools", client.chat.completions.create.call_args.kwargs)
-        self.assertEqual(
-            client.chat.completions.create.call_args.kwargs["model"], MODEL
-        )
-
-    def test_run_tool_calls(self) -> None:
-        search = MagicMock(side_effect=lambda query: f"results for {query}")
-        message = _tool_message("late delivery", "broken")
-
-        results = _run_tool_calls(message.tool_calls or [], search)
-
-        self.assertEqual(
-            results,
-            [
-                {
-                    "role": "tool",
-                    "tool_call_id": "call_1",
-                    "content": "results for late delivery",
-                },
-                {
-                    "role": "tool",
-                    "tool_call_id": "call_2",
-                    "content": "results for broken",
-                },
-            ],
-        )
-        self.assertEqual(_run_tool_calls([], search), [])
-
-    def test_call_search(self) -> None:
-        search = MagicMock(return_value="[]")
-
-        self.assertEqual(_call_search('{"query": "entrega"}', search), "[]")
-        search.assert_called_once_with("entrega")
-
-        for arguments in ("not json", '{"other": 1}', "[1, 2]"):
-            with self.assertLogs("talk_with_data.generation", level="WARNING"):
-                reply = _call_search(arguments, search)
-
-            self.assertTrue(reply.startswith("Error:"))
-
-        search.assert_called_once()
+        self.assertEqual(without_tools.content, "```sql\nSELECT 2\n```")
+        create_call = client.chat.completions.create.call_args.kwargs
+        self.assertNotIn("tools", create_call)
+        self.assertEqual(create_call["model"], MODEL)
 
     def test_build_system_prompt(self) -> None:
         prompt = build_system_prompt("CREATE TABLE t(a INT);")

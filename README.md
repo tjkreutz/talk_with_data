@@ -13,6 +13,8 @@ uv run pre-commit install
 
 ## Data
 
+### Kaggle data
+
 To (re)download the data from Kaggle:
 
 ```sh
@@ -20,11 +22,10 @@ curl -L -o olist.zip https://www.kaggle.com/api/v1/datasets/download/olistbr/bra
 unzip -o olist.zip -d data/raw
 ```
 
-## Review search
+### Review search
 
 The review vectors are in `data/vectors/review_embeddings.parquet` and load as the
-table `review_embeddings`. Pass a `search` function to `generate_sql` to give the
-model a `search_reviews` tool.
+table `review_embeddings`.
 
 ## Configuration
 

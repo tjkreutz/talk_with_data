@@ -295,6 +295,10 @@ call `search_reviews(query)`, which returns the 10 most similar reviews as JSON.
   `data/vectors/review_embeddings.parquet` (48 MB, under GitHub's 50 MB warning),
   and `create_connection` loads it as a table. There is no build script, so
   changing the model or dimensions means regenerating the file by hand.
-- **The tool is optional in `generate_sql`,** so the prompt and recorded
-  experiments are unchanged. The prompt hash does not show whether it was on, so
+- **Tools are optional in `generate_sql(..., tools=...)`,** so the prompt and
+  recorded experiments are unchanged. We use the OpenAI SDK's own classes and no
+  tool class of our own: a tool is a pydantic model for its arguments, which
+  `pydantic_function_tool` turns into the definition and `parse()` turns the
+  model's arguments back into, plus a function registered in `make_tools`.
+  Malformed arguments now raise from `parse()` instead of going back to the model. The prompt hash does not show whether it was on, so
   record that if we ever evaluate with it. Not evaluated yet.
