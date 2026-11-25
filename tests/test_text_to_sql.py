@@ -1,6 +1,6 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -114,6 +114,35 @@ class TestGeneration(unittest.TestCase):
         self.assertEqual(sql, "SELECT 3")
         self.assertEqual(client.chat.completions.parse.call_count, MAX_TOOL_ROUNDS)
         self.assertNotIn("tools", client.chat.completions.create.call_args.kwargs)
+
+    def test_generate_sql_with_history(self) -> None:
+        client = MagicMock()
+        message = client.chat.completions.create.return_value.choices[0].message
+        message.content = "```sql\nSELECT 2\n```"
+        history = [("Q1?", "SELECT 1"), ("Q2?", "SELECT 3")]
+
+        sql = generate_sql(client, "And now?", "S", history=history)
+
+        self.assertEqual(sql, "SELECT 2")
+        messages = client.chat.completions.create.call_args.kwargs["messages"]
+        self.assertEqual(
+            [(m["role"], m["content"]) for m in messages[1:]],
+            [
+                ("user", "Q1?"),
+                ("assistant", "```sql\nSELECT 1\n```"),
+                ("user", "Q2?"),
+                ("assistant", "```sql\nSELECT 3\n```"),
+                ("user", "And now?"),
+            ],
+        )
+
+        with patch("talk_with_data.text_to_sql.HISTORY_TURNS", 1):
+            generate_sql(client, "And now?", "S", history=history)
+
+        bounded = client.chat.completions.create.call_args.kwargs["messages"]
+
+        self.assertEqual(len(bounded), 4)
+        self.assertEqual(bounded[1]["content"], "Q2?")
 
     def test_complete(self) -> None:
         client = MagicMock()

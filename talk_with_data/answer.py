@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Sequence
 
 from duckdb import DuckDBPyConnection
 from openai import OpenAI
@@ -15,9 +16,13 @@ FAILURE = (
 
 
 def answer_question(
-    connection: DuckDBPyConnection, client: OpenAI, schema: str, question: str
+    connection: DuckDBPyConnection,
+    client: OpenAI,
+    schema: str,
+    question: str,
+    history: Sequence[tuple[str, str]] = (),
 ) -> str:
-    sql = generate_sql(client, question, schema)
+    sql = generate_sql(client, question, schema, history=history)
     result = try_query(connection, sql)
 
     if result.error is not None:
