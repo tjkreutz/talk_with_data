@@ -43,6 +43,15 @@ uv run streamlit run app.py
 Opens a chat in the browser. Each reply shows a short written answer, the
 generated SQL and the table it returns.
 
+## Terminal chat
+
+```sh
+uv run python main.py
+```
+
+Asks for a question, prints only the written answer, and repeats until you
+enter an empty line.
+
 ## Evaluation
 
 ```sh
