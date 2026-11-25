@@ -1,25 +1,47 @@
 import os
 import re
+from collections.abc import Mapping
+from typing import cast
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.chat import (
+    ChatCompletionFunctionToolParam,
+    ChatCompletionMessage,
+    ChatCompletionMessageParam,
+)
 
-from talk_with_data.config import MODEL, PROMPT_NAME
+from talk_with_data.config import MAX_TOOL_ROUNDS, MODEL, PROMPT_NAME
+from talk_with_data.tools import TOOLS, ToolHandler, run_tool_calls
 from talk_with_data.utils import load_prompt
 
 CODE_BLOCK = re.compile(r"```(?:sql)?\s*(.*?)```", re.DOTALL)
 
 
-def generate_sql(client: OpenAI, question: str, schema: str) -> str:
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": build_system_prompt(schema)},
-            {"role": "user", "content": question},
-        ],
-    )
+def generate_sql(
+    client: OpenAI,
+    question: str,
+    schema: str,
+    tools: Mapping[str, ToolHandler] | None = None,
+) -> str:
+    messages: list[ChatCompletionMessageParam] = [
+        {"role": "system", "content": build_system_prompt(schema)},
+        {"role": "user", "content": question},
+    ]
+    definitions = [TOOLS[name] for name in tools or {}]
 
-    return _extract_sql(response.choices[0].message.content or "")
+    for _ in range(MAX_TOOL_ROUNDS):
+        message = _complete(client, messages, definitions)
+
+        if not tools or not message.tool_calls:
+            return _extract_sql(message.content or "")
+
+        messages.append(
+            cast(ChatCompletionMessageParam, message.model_dump(exclude_none=True))
+        )
+        messages.extend(run_tool_calls(message.tool_calls, tools))
+
+    return _extract_sql(_complete(client, messages, []).content or "")
 
 
 def build_system_prompt(schema: str) -> str:
@@ -30,6 +52,23 @@ def create_client() -> OpenAI:
     load_dotenv()
 
     return OpenAI(base_url=os.environ["LLM_API_URL"], api_key=os.environ["LLM_API_KEY"])
+
+
+def _complete(
+    client: OpenAI,
+    messages: list[ChatCompletionMessageParam],
+    tools: list[ChatCompletionFunctionToolParam],
+) -> ChatCompletionMessage:
+    if tools:
+        parsed = client.chat.completions.parse(
+            model=MODEL, messages=messages, tools=tools
+        )
+
+        return parsed.choices[0].message
+
+    response = client.chat.completions.create(model=MODEL, messages=messages)
+
+    return response.choices[0].message
 
 
 def _extract_sql(reply: str) -> str:

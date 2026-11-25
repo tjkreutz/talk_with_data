@@ -13,12 +13,19 @@ uv run pre-commit install
 
 ## Data
 
+### Kaggle data
+
 To (re)download the data from Kaggle:
 
 ```sh
 curl -L -o olist.zip https://www.kaggle.com/api/v1/datasets/download/olistbr/brazilian-ecommerce
 unzip -o olist.zip -d data/raw
 ```
+
+### Review search
+
+The review vectors are in `data/vectors/review_embeddings.parquet` and load as the
+table `review_embeddings`.
 
 ## Configuration
 

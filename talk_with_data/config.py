@@ -3,12 +3,18 @@ from pathlib import Path
 MODEL = "google/gemini-3.5-flash-lite"
 PROMPT_NAME = "system_prompt"
 
+EMBEDDING_MODEL = "mongodb/voyage-4-lite"
+EMBEDDING_DIMENSIONS = 256
+SEARCH_RESULTS = 10
+MAX_TOOL_ROUNDS = 3
+
 RAW_DIR = Path("data/raw")
 SQL_DIR = Path("data/sql")
 PROMPT_DIR = Path("data/prompts")
 QUESTIONS_DIR = Path("data/questions")
 EXPERIMENTS_PATH = Path("data/experiments.jsonl")
 RUNS_DIR = Path("data/runs")
+VECTORS_PATH = Path("data/vectors/review_embeddings.parquet")
 
 VIEWS = ("order_facts", "review_facts")
 MODEL_TABLES = VIEWS
