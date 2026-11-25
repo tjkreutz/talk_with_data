@@ -59,9 +59,6 @@ class TestSearch(unittest.TestCase):
         with self.assertRaises(ValueError):
             search_reviews(self.connection, self.client, "   ")
 
-        with self.assertRaises(RuntimeError):
-            search_reviews(connect(), self.client, "excellent")
-
     def test_search_reviews_json(self) -> None:
         reply = search_reviews_json(self.connection, self.client, "excellent")
 

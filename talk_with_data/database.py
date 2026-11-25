@@ -17,8 +17,7 @@ def create_connection(
     for view in VIEWS:
         connection.execute(load_sql(view))
 
-    if vectors_path.exists():
-        connection.execute(load_sql("load_review_embeddings"), [str(vectors_path)])
+    connection.execute(load_sql("load_review_embeddings"), [str(vectors_path)])
 
     return connection
 
