@@ -1,5 +1,14 @@
+from dataclasses import dataclass
+
 from duckdb import DuckDBPyConnection
-from streamlit import cache_resource, chat_input, empty
+from streamlit import (
+    cache_resource,
+    chat_input,
+    chat_message,
+    empty,
+    markdown,
+    session_state,
+)
 from streamlit.delta_generator import DeltaGenerator
 
 from talk_with_data.answer import Answer, stream_answer
@@ -8,20 +17,53 @@ from talk_with_data.schema import describe_schema
 from talk_with_data.text_to_sql import create_client
 
 PLACEHOLDER = "Ask a question about Olist orders and reviews"
+TURNS = "turns"
+
+
+@dataclass(frozen=True)
+class Turn:
+    question: str
+    answer: Answer
 
 
 def main() -> None:
+    if TURNS not in session_state:
+        session_state[TURNS] = []
+
+    turns: list[Turn] = session_state[TURNS]
+
+    for turn in turns:
+        _show_turn(turn)
+
     question = chat_input(PLACEHOLDER)
 
     if not question:
         return
 
+    with chat_message("user"):
+        markdown(question)
+
     connection = _get_connection()
     schema = describe_schema(connection)
-    slots = (empty(), empty(), empty())
+    history = [(t.question, t.answer.sql) for t in turns if t.answer.error is None]
 
-    for answer in stream_answer(connection, create_client(), schema, question):
-        _show(answer, *slots)
+    with chat_message("assistant"):
+        slots = (empty(), empty(), empty())
+
+        for answer in stream_answer(
+            connection, create_client(), schema, question, history
+        ):
+            _show(answer, *slots)
+
+    turns.append(Turn(question, answer))
+
+
+def _show_turn(turn: Turn) -> None:
+    with chat_message("user"):
+        markdown(turn.question)
+
+    with chat_message("assistant"):
+        _show(turn.answer, empty(), empty(), empty())
 
 
 def _show(

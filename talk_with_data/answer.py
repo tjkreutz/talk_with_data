@@ -11,8 +11,8 @@ from talk_with_data.writer import write_answer
 
 LOGGER = logging.getLogger(__name__)
 FAILURE = (
-    "I could not run that query. I only know about orders and reviews, "
-    "so the question may need data I do not have."
+    "I could not answer that. I only know about Olist orders and reviews, so try "
+    "a question about those, for example how many orders were delivered in 2017."
 )
 
 
