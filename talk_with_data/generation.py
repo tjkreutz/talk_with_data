@@ -4,12 +4,9 @@ import re
 from dotenv import load_dotenv
 from openai import OpenAI
 
-MODEL = "anthropic/claude-haiku-5.5"
-SYSTEM_PROMPT = """You write DuckDB SQL queries for a database with this schema:
+from talk_with_data.utils import load_prompt
 
-{schema}
-
-Answer the user's question with a single SQL query inside a ```sql code block. Do not explain."""
+MODEL = "google/gemini-3.5-flash-lite"
 CODE_BLOCK = re.compile(r"```(?:sql)?\s*(.*?)```", re.DOTALL)
 
 
@@ -17,12 +14,16 @@ def generate_sql(client: OpenAI, question: str, schema: str) -> str:
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT.format(schema=schema)},
+            {"role": "system", "content": build_system_prompt(schema)},
             {"role": "user", "content": question},
         ],
     )
 
     return _extract_sql(response.choices[0].message.content or "")
+
+
+def build_system_prompt(schema: str) -> str:
+    return load_prompt("system_prompt").format(schema=schema)
 
 
 def create_client() -> OpenAI:
