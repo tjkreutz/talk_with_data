@@ -12,16 +12,22 @@ class TestAnswer(unittest.TestCase):
         self.connection.execute("CREATE TABLE t AS SELECT 1 AS n")
         self.client = MagicMock()
 
-    def _answer(self, sql: str) -> tuple[str, MagicMock]:
+    def _answer(
+        self, sql: str, history: tuple[tuple[str, str], ...] = ()
+    ) -> tuple[str, MagicMock]:
         write = MagicMock(return_value="There is one row.")
 
         with (
             patch("talk_with_data.answer.generate_sql", return_value=sql) as generate,
             patch("talk_with_data.answer.write_answer", write),
         ):
-            reply = answer_question(self.connection, self.client, "SCHEMA", "How many?")
+            reply = answer_question(
+                self.connection, self.client, "SCHEMA", "How many?", history
+            )
 
-        generate.assert_called_once_with(self.client, "How many?", "SCHEMA")
+        generate.assert_called_once_with(
+            self.client, "How many?", "SCHEMA", history=history
+        )
 
         return reply, write
 
@@ -32,6 +38,11 @@ class TestAnswer(unittest.TestCase):
         write.assert_called_once_with(
             self.client, "How many?", "SELECT n FROM t", [(1,)]
         )
+
+        history = (("How many in 2017?", "SELECT 1"),)
+        reply, _ = self._answer("SELECT n FROM t", history)
+
+        self.assertEqual(reply, "There is one row.")
 
         for sql in (
             "SELECT * FROM missing",

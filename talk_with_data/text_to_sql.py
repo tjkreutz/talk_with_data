@@ -1,6 +1,6 @@
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import cast
 
 from dotenv import load_dotenv
@@ -11,7 +11,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 
-from talk_with_data.config import MAX_TOOL_ROUNDS, MODEL, PROMPT_NAME
+from talk_with_data.config import HISTORY_TURNS, MAX_TOOL_ROUNDS, MODEL, PROMPT_NAME
 from talk_with_data.tools import TOOLS, ToolHandler, run_tool_calls
 from talk_with_data.utils import load_prompt
 
@@ -23,11 +23,9 @@ def generate_sql(
     question: str,
     schema: str,
     tools: Mapping[str, ToolHandler] | None = None,
+    history: Sequence[tuple[str, str]] = (),
 ) -> str:
-    messages: list[ChatCompletionMessageParam] = [
-        {"role": "system", "content": build_system_prompt(schema)},
-        {"role": "user", "content": question},
-    ]
+    messages = _build_messages(question, schema, history)
     definitions = [TOOLS[name] for name in tools or {}]
 
     for _ in range(MAX_TOOL_ROUNDS):
@@ -42,6 +40,22 @@ def generate_sql(
         messages.extend(run_tool_calls(message.tool_calls, tools))
 
     return _extract_sql(_complete(client, messages, []).content or "")
+
+
+def _build_messages(
+    question: str, schema: str, history: Sequence[tuple[str, str]]
+) -> list[ChatCompletionMessageParam]:
+    messages: list[ChatCompletionMessageParam] = [
+        {"role": "system", "content": build_system_prompt(schema)}
+    ]
+
+    for past_question, past_sql in history[-HISTORY_TURNS:]:
+        messages.append({"role": "user", "content": past_question})
+        messages.append({"role": "assistant", "content": f"```sql\n{past_sql}\n```"})
+
+    messages.append({"role": "user", "content": question})
+
+    return messages
 
 
 def build_system_prompt(schema: str) -> str:

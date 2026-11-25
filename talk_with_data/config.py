@@ -12,6 +12,7 @@ EMBEDDING_MODEL = "mongodb/voyage-4-lite"
 EMBEDDING_DIMENSIONS = 256
 SEARCH_RESULTS = 10
 MAX_TOOL_ROUNDS = 3
+HISTORY_TURNS = 5
 
 RAW_DIR = Path("data/raw")
 SQL_DIR = Path("data/sql")
