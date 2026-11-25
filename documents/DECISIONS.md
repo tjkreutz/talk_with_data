@@ -249,3 +249,35 @@ What still fails on dev is mostly about output conventions:
 - **Accented city names** still trip Haiku a little (6 of 500 attempts).
 - **Nested queries.** Flash Lite loses 14 of 500 attempts on `new_customers_month`,
   13 of them SQL errors from referencing a column outside its subquery.
+
+## Semantic layer in the prompt: glossary and few-shot examples
+
+Views fix the data model, but the model still lacked conventions (percent
+against fraction, lowercase city names, how many rows to return). We tried a
+short glossary, six few-shot examples, and both, on dev with Flash Lite and 5
+runs (`semantic_layer` in `experiments.jsonl`). The base prompt is the
+`introduce_views` line, so we did not run it again.
+
+| Prompt | Hash | Accuracy |
+|---|---|---|
+| Base (views only) | `d4742522` | 0.878 |
+| Glossary | `32c5c4e5` | 0.908 |
+| Few-shot | `68cfb07f` | 0.888 |
+| **Glossary and few-shot** | `6c593faf` | **0.936** |
+
+**Decision: keep both.** They fix different things. The glossary fixes the
+conventions (new customers, approval hours) and few-shot fixes the answer shape
+(busiest hour). Each alone also breaks something (glossary alone: `busiest_hour`,
+few-shot alone: `returning_orders_month`), and together nothing gets worse. The
+latency is unchanged (about 0.8 s median) and the prompt is about 380 words,
+kept in `data/prompts/system_prompt.txt`. The default model is now Flash Lite.
+
+- The examples are six train questions. Their SQL is written for the views and
+  returns exactly the train gold result.
+- It took three rounds of trial and error on dev, so the dev score is
+  optimistic. Test is still untouched. Two glossary lines backfired on the way:
+  "answer with just the requested value" dropped the measure from rankings, and
+  "city names are lowercase" made the model lowercase state codes.
+- Still failing: label text and column order in `late_vs_ontime_state`, and
+  `carrier_days_state`, where the model's own rounding to 2 decimals meets our
+  rounding to 1.

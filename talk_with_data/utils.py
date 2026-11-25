@@ -4,10 +4,15 @@ from pathlib import Path
 from subprocess import run
 
 SQL_DIR = Path("data/sql")
+PROMPT_DIR = Path("data/prompts")
 
 
 def load_sql(name: str, sql_dir: Path = SQL_DIR) -> str:
     return (sql_dir / f"{name}.sql").read_text(encoding="utf-8")
+
+
+def load_prompt(name: str, prompt_dir: Path = PROMPT_DIR) -> str:
+    return (prompt_dir / f"{name}.txt").read_text(encoding="utf-8")
 
 
 def append_jsonl(row: Mapping[str, object], path: Path) -> None:

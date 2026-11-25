@@ -10,6 +10,7 @@ from talk_with_data.utils import (
     append_jsonl,
     get_git_version,
     group_by,
+    load_prompt,
     load_sql,
     write_jsonl,
 )
@@ -27,6 +28,16 @@ class TestUtils(unittest.TestCase):
 
             with self.assertRaises(FileNotFoundError):
                 load_sql("missing", sql_dir)
+
+    def test_load_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            prompt_dir = Path(directory)
+            (prompt_dir / "system.txt").write_text("Write é {schema}", encoding="utf-8")
+
+            self.assertEqual(load_prompt("system", prompt_dir), "Write é {schema}")
+
+            with self.assertRaises(FileNotFoundError):
+                load_prompt("missing", prompt_dir)
 
     def test_append_jsonl(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -11,7 +11,7 @@ from openai import OpenAI
 
 from talk_with_data.comparison import results_match
 from talk_with_data.execution import run_query
-from talk_with_data.generation import MODEL, SYSTEM_PROMPT, generate_sql
+from talk_with_data.generation import MODEL, build_system_prompt, generate_sql
 from talk_with_data.metrics import Attempt, Outcome
 from talk_with_data.questions import Question
 from talk_with_data.schema import MODEL_TABLES
@@ -113,6 +113,6 @@ def _preview_rows(rows: Sequence[Sequence[object]]) -> list[list[object]]:
 
 
 def _hash_prompt(schema: str) -> str:
-    prompt = SYSTEM_PROMPT.format(schema=schema)
+    prompt = build_system_prompt(schema)
 
     return sha256(prompt.encode()).hexdigest()[:HASH_LENGTH]

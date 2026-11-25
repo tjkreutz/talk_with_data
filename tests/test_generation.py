@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from talk_with_data.generation import (
     MODEL,
     _extract_sql,
+    build_system_prompt,
     generate_sql,
 )
 
@@ -30,6 +31,15 @@ class TestGeneration(unittest.TestCase):
         message.content = None
 
         self.assertEqual(generate_sql(client, question="?", schema=""), "")
+
+    def test_build_system_prompt(self) -> None:
+        prompt = build_system_prompt("CREATE TABLE t(a INT);")
+
+        self.assertIn("CREATE TABLE t(a INT);", prompt)
+        self.assertNotIn("{schema}", prompt)
+        self.assertIn("Glossary:", prompt)
+        self.assertIn("Examples:", prompt)
+        self.assertTrue(prompt.endswith("Do not explain."))
 
     def test_extract_sql(self) -> None:
         self.assertEqual(_extract_sql("```sql\nSELECT 1\n```"), "SELECT 1")
