@@ -2,11 +2,13 @@ from collections.abc import Sequence
 
 from duckdb import DuckDBPyConnection
 
-CORE_TABLES = ("orders", "order_reviews", "customers")
+from talk_with_data.utils import load_sql
+
+MODEL_TABLES = ("order_facts", "review_facts")
 
 
 def describe_schema(
-    connection: DuckDBPyConnection, tables: Sequence[str] = CORE_TABLES
+    connection: DuckDBPyConnection, tables: Sequence[str] = MODEL_TABLES
 ) -> str:
     statements = (_get_create_statement(connection, table) for table in tables)
 
@@ -14,11 +16,12 @@ def describe_schema(
 
 
 def _get_create_statement(connection: DuckDBPyConnection, table: str) -> str:
-    rows = connection.execute(
-        "SELECT sql FROM duckdb_tables() WHERE table_name = ?", [table]
-    ).fetchall()
+    rows = connection.execute(load_sql("table_columns"), [table]).fetchall()
 
     if not rows:
         raise ValueError(f"Unknown table: {table}")
 
-    return str(rows[0][0])
+    kind = "VIEW" if rows[0][0] == "VIEW" else "TABLE"
+    columns = ", ".join(f"{name} {data_type}" for _, name, data_type in rows)
+
+    return f"CREATE {kind} {table}({columns});"

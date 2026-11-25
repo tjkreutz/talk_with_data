@@ -76,9 +76,11 @@ would punish that. The comparison is `results_match` in
 
 - **Column names are ignored.** Aliases are arbitrary. The number of columns
   must match, so an extra column counts as wrong.
-- **Row order is ignored, unless the gold SQL has an `ORDER BY`.** Then order
-  must match. A gold query with `ORDER BY` inside a window function also counts
-  as ordered, which only matters for multi-row results.
+- **Row order must match.** Every multi-row gold query has an `ORDER BY` (25 of
+  300 questions, none without), so there is nothing to gain from an
+  order-insensitive comparison. We had one at first, and removed it because it
+  never ran on real data. If we ever add a multi-row question without an
+  `ORDER BY`, we need to bring it back.
 - **Numbers are rounded to the precision of the gold column.** Gold queries
   round (12.6), the model usually does not (12.557), so the model's value is
   rounded to the gold's number of decimals. A gold column of whole numbers
@@ -165,3 +167,85 @@ The partial misses show the limits of the metric as much as of the model:
   comparison breaking on ties inside the list (`top_cities_state`).
 - **How many to return.** "When do customers order the most?" gets a top 5
   where the gold has one hour (`busiest_hour`).
+
+## Model choice: Haiku and Flash Lite, not Sonnet
+
+We compared three models on dev with the bare schema and the same prompt, 5 runs
+per question (`model_choice` in `experiments.jsonl`):
+
+| Model | Accuracy | Median / p95 latency | Run time | Price per 1M tokens (in / out) |
+|---|---|---|---|---|
+| Haiku 5.5 | 0.724 (and 0.742 in `baseline`) | 1.36 s / 3.04 s | 98 s | $0.10 / $0.50 |
+| Gemini 3.5 Flash Lite | 0.660 | 0.90 s / 1.47 s | 62 s | $0.30 / $2.50 |
+| Claude Sonnet 5.5 | 0.656 | 1.42 s / 3.33 s | 108 s | $2 / $10 |
+
+The run-to-run standard deviation is between 0.01 and 0.02 for all three. We chose these
+three after a short latency probe (5 questions each). The newer Gemini 3.8 and 4
+models think about a thousand tokens before answering by default, which made
+them 7 to 11 seconds per question, so we left them out.
+
+**Decision: we leave Sonnet after these model experiments.** It was no more
+accurate than Haiku on the strict metric (0.656 against 0.72 to 0.74), it has
+the longest tail latency and the longest run time, and it costs 20 times as much
+per token. It did better on the accented-city trap (1.00 against 0.00 to 0.04
+for Haiku), but it lost more on templates where the gold fixes a convention, such as
+whole against fractional days and month labels. The bigger model did not buy
+accuracy here. Every experiment after this one uses only Haiku 5.5, for
+accuracy, and Gemini 3.5 Flash Lite, for speed. Sonnet was never run with the
+views, so we make no claim about it beyond this comparison.
+
+## Semantic views: order_facts and review_facts
+
+The error analysis of the baseline showed systematic gaps, not noise: the raw
+tables carry traps (`customer_id` is per order, the estimated delivery date has
+no time of day, durations and months must be derived). Instead of adding hints
+to the prompt, we put the semantics in the data. `create_connection` builds two
+DuckDB views right after the CSVs load, and the model sees only these two views
+(column names and types, not their definitions). The raw tables stay in the
+database, so the gold SQL and the eval are unchanged.
+
+- **`order_facts`**, one row per order: orders joined with the customer
+  columns, `customer_unique_id` instead of `customer_id`, calendar columns
+  (`purchase_month` as `'YYYY-MM'`, year, quarter, weekday, hour), date-typed
+  `delivered_date` and `estimated_delivery_date`, whole-day durations
+  (`days_to_deliver`, `days_estimated`, `days_carrier_to_customer`), `is_late`
+  (date-level comparison, only for delivered orders) and `customer_order_number`
+  (the n-th order of a person, ties broken by `order_id`).
+- **`review_facts`**, one row per review: the review columns, `has_comment`,
+  `days_to_answer`, and every `order_facts` column, so review questions need no
+  join. It has exactly as many rows as `order_reviews` (99,224).
+- **Rule for adding a column:** it must be standard modelling practice, something
+  a data engineer would add without our questions (typed grain, calendar
+  columns, lifecycle durations, entity keys, status flags). No column is named
+  after a question, and the prompt did not change.
+- **A view must keep every raw attribute that questions can use.** Our first
+  version left out `customer_zip_code_prefix`, and the zip questions fell from
+  1.0 to 0.0 accuracy. Removing an attribute silently removes a capability.
+
+Results on dev (strict metric, 5 runs per question, same prompt):
+
+| Model | Raw schema | Views | Median / p95 latency with views |
+|---|---|---|---|
+| Haiku 5.5 | 0.742 and 0.724 | 0.870 | 1.30 s / 2.53 s |
+| Gemini 3.5 Flash Lite | 0.660 | 0.878 | 0.80 s / 1.14 s |
+
+With the views the cheap fast model catches up with Haiku (0.878 against
+0.870, within the run noise) at about 0.8 s, so once the semantics are in the
+data the choice of model matters much less. The
+conventions in the views (whole days, `'YYYY-MM'`, date-level lateness) are
+choices that match the gold's, which makes part of the comparison circular. We
+say so rather than hide it.
+
+What still fails on dev is mostly about output conventions:
+
+- **Label text and column order** in `late_vs_ontime_state` (25 of 500 attempts
+  for each model).
+- **How many rows or columns to return.** Top-N against top 1
+  (`busiest_hour`, 15 of 500 for Haiku and 8 for Flash Lite), and extra columns
+  returned (`late_score_gap_month`, 3 and 2).
+- **Month recomputed.** Haiku ignores `purchase_month` and groups by
+  `DATE_TRUNC('month', ...)`, 14 of 500 attempts. A column existing does not make
+  the model use it.
+- **Accented city names** still trip Haiku a little (6 of 500 attempts).
+- **Nested queries.** Flash Lite loses 14 of 500 attempts on `new_customers_month`,
+  13 of them SQL errors from referencing a column outside its subquery.

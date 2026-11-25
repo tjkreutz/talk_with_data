@@ -2,7 +2,10 @@ from pathlib import Path
 
 from duckdb import DuckDBPyConnection, connect
 
+from talk_with_data.utils import load_sql
+
 RAW_DIR = Path("data/raw")
+VIEWS = ("order_facts", "review_facts")
 
 
 def create_connection(raw_dir: Path = RAW_DIR) -> DuckDBPyConnection:
@@ -10,6 +13,9 @@ def create_connection(raw_dir: Path = RAW_DIR) -> DuckDBPyConnection:
 
     for csv_path in sorted(raw_dir.glob("*.csv")):
         connection.read_csv(str(csv_path)).create(_get_table_name(csv_path))
+
+    for view in VIEWS:
+        connection.execute(load_sql(view))
 
     return connection
 

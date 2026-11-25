@@ -1,30 +1,18 @@
-import re
-from collections import Counter
 from collections.abc import Sequence
 from decimal import Decimal
 from typing import TypeGuard
 
 Number = int | float | Decimal
 Rows = Sequence[Sequence[object]]
-ORDER_BY = re.compile(r"\border\s+by\b", re.IGNORECASE)
 
 
-def results_match(predicted: Rows, gold: Rows, gold_sql: str) -> bool:
+def results_match(predicted: Rows, gold: Rows) -> bool:
     if {len(row) for row in predicted} != {len(row) for row in gold}:
         return False
 
     decimals = _get_column_decimals(gold)
-    predicted_rows = _canonicalize_rows(predicted, decimals)
-    gold_rows = _canonicalize_rows(gold, decimals)
 
-    if _has_order_by(gold_sql):
-        return predicted_rows == gold_rows
-
-    return Counter(predicted_rows) == Counter(gold_rows)
-
-
-def _has_order_by(sql: str) -> bool:
-    return ORDER_BY.search(sql) is not None
+    return _canonicalize_rows(predicted, decimals) == _canonicalize_rows(gold, decimals)
 
 
 def _get_column_decimals(rows: Rows) -> list[int]:
