@@ -2,9 +2,8 @@ from collections.abc import Sequence
 
 from duckdb import DuckDBPyConnection
 
+from talk_with_data.config import MODEL_TABLES
 from talk_with_data.utils import load_sql
-
-MODEL_TABLES = ("order_facts", "review_facts")
 
 
 def describe_schema(

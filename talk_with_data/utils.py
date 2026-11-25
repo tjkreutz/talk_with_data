@@ -3,8 +3,7 @@ from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from subprocess import run
 
-SQL_DIR = Path("data/sql")
-PROMPT_DIR = Path("data/prompts")
+from talk_with_data.config import PROMPT_DIR, SQL_DIR
 
 
 def load_sql(name: str, sql_dir: Path = SQL_DIR) -> str:

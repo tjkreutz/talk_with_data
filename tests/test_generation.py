@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock
 
+from talk_with_data.config import MODEL
 from talk_with_data.generation import (
-    MODEL,
     _extract_sql,
     build_system_prompt,
     generate_sql,

@@ -22,6 +22,8 @@ unzip -o olist.zip -d data/raw
 
 ## Configuration
 
+App settings (model, prompt, paths, views, evaluation and statistics parameters) are in `talk_with_data/config.py`.
+
 The LLM is reached through an OpenAI-compatible API (we use OpenRouter). Copy
 `.env.example` to `.env` and fill in `LLM_API_KEY`.
 
@@ -31,7 +33,7 @@ The LLM is reached through an OpenAI-compatible API (we use OpenRouter). Copy
 uv run python evaluation.py
 ```
 
-Runs the baseline on the dev questions (5 runs each) and appends a summary line
+Runs the model on the dev questions (5 runs each) and appends a summary line
 to `data/experiments.jsonl`.
 
 ## Development

@@ -5,15 +5,12 @@ from random import Random
 from statistics import mean, stdev
 from typing import Literal, get_args
 
+from talk_with_data.config import CONFIDENCE, DECIMALS, RESAMPLES, SEED
 from talk_with_data.utils import group_by
 
 Outcome = Literal["correct", "wrong", "empty", "error"]
 
 OUTCOMES: tuple[Outcome, ...] = get_args(Outcome)
-RESAMPLES = 1000
-CONFIDENCE = 0.95
-DECIMALS = 3
-SEED = 42
 
 
 @dataclass(frozen=True)

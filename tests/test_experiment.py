@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from duckdb import connect
 
+from talk_with_data.config import MODEL
 from talk_with_data.experiment import (
     _evaluate_attempt,
     _execute_attempt,
@@ -16,7 +17,6 @@ from talk_with_data.experiment import (
     run_experiment,
     write_attempts,
 )
-from talk_with_data.generation import MODEL
 from talk_with_data.metrics import Attempt
 from talk_with_data.questions import Question
 

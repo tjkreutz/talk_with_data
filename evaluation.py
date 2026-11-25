@@ -1,7 +1,14 @@
 import json
-from pathlib import Path
 from time import perf_counter
 
+from talk_with_data.config import (
+    EXPERIMENT,
+    EXPERIMENTS_PATH,
+    QUESTIONS_DIR,
+    RUNS,
+    RUNS_DIR,
+    SPLIT,
+)
 from talk_with_data.database import create_connection
 from talk_with_data.experiment import (
     describe_experiment,
@@ -13,13 +20,6 @@ from talk_with_data.metrics import summarize
 from talk_with_data.questions import load_questions
 from talk_with_data.schema import describe_schema
 from talk_with_data.utils import append_jsonl
-
-EXPERIMENT = "baseline"
-SPLIT = "dev"
-RUNS = 5
-QUESTIONS_DIR = Path("data/questions")
-EXPERIMENTS_PATH = Path("data/experiments.jsonl")
-RUNS_DIR = Path("data/runs")
 
 
 def main() -> None:

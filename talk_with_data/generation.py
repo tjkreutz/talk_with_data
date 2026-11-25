@@ -4,9 +4,9 @@ import re
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from talk_with_data.config import MODEL, PROMPT_NAME
 from talk_with_data.utils import load_prompt
 
-MODEL = "google/gemini-3.5-flash-lite"
 CODE_BLOCK = re.compile(r"```(?:sql)?\s*(.*?)```", re.DOTALL)
 
 
@@ -23,7 +23,7 @@ def generate_sql(client: OpenAI, question: str, schema: str) -> str:
 
 
 def build_system_prompt(schema: str) -> str:
-    return load_prompt("system_prompt").format(schema=schema)
+    return load_prompt(PROMPT_NAME).format(schema=schema)
 
 
 def create_client() -> OpenAI:

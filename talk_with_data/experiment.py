@@ -10,17 +10,20 @@ from duckdb import DuckDBPyConnection, Error
 from openai import OpenAI
 
 from talk_with_data.comparison import results_match
+from talk_with_data.config import (
+    HASH_LENGTH,
+    MAX_WORKERS,
+    MODEL,
+    MODEL_TABLES,
+    PREVIEW_ROWS,
+)
 from talk_with_data.execution import run_query
-from talk_with_data.generation import MODEL, build_system_prompt, generate_sql
+from talk_with_data.generation import build_system_prompt, generate_sql
 from talk_with_data.metrics import Attempt, Outcome
 from talk_with_data.questions import Question
-from talk_with_data.schema import MODEL_TABLES
 from talk_with_data.utils import get_git_version, write_jsonl
 
 LOGGER = logging.getLogger(__name__)
-MAX_WORKERS = 8
-HASH_LENGTH = 8
-PREVIEW_ROWS = 5
 
 
 def run_experiment(

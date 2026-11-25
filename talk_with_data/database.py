@@ -2,10 +2,8 @@ from pathlib import Path
 
 from duckdb import DuckDBPyConnection, connect
 
+from talk_with_data.config import RAW_DIR, VIEWS
 from talk_with_data.utils import load_sql
-
-RAW_DIR = Path("data/raw")
-VIEWS = ("order_facts", "review_facts")
 
 
 def create_connection(raw_dir: Path = RAW_DIR) -> DuckDBPyConnection:
