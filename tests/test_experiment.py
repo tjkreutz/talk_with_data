@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from duckdb import connect
 
-from talk_with_data.config import MODEL
+from talk_with_data.config import TEXT_TO_SQL_MODEL
 from talk_with_data.experiment import (
     _evaluate_attempt,
     _execute_attempt,
@@ -126,7 +126,7 @@ class TestExperiment(unittest.TestCase):
         self.assertRegex(str(description["id"]), r"^baseline-\d{8}T\d{6}$")
         self.assertEqual(description["experiment"], "baseline")
         self.assertEqual(description["git_commit"], "abc1234+dirty")
-        self.assertEqual(description["model"], MODEL)
+        self.assertEqual(description["model"], TEXT_TO_SQL_MODEL)
         self.assertEqual(description["tables"], ["order_facts", "review_facts"])
         self.assertEqual(description["split"], "dev")
         self.assertTrue(str(description["timestamp"]).endswith("+00:00"))

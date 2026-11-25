@@ -13,8 +13,8 @@ from talk_with_data.comparison import results_match
 from talk_with_data.config import (
     HASH_LENGTH,
     MAX_WORKERS,
-    MODEL,
     PREVIEW_ROWS,
+    TEXT_TO_SQL_MODEL,
     VIEWS,
 )
 from talk_with_data.execution import run_query, try_query
@@ -101,7 +101,7 @@ def describe_experiment(name: str, split: str, schema: str) -> dict[str, object]
         "experiment": name,
         "timestamp": now.isoformat(timespec="seconds"),
         "git_commit": get_git_version(),
-        "model": MODEL,
+        "model": TEXT_TO_SQL_MODEL,
         "prompt_hash": _hash_prompt(schema),
         "tables": list(VIEWS),
         "split": split,

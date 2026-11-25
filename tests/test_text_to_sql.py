@@ -9,7 +9,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.parsed_function_tool_call import ParsedFunction
 
-from talk_with_data.config import MAX_TOOL_ROUNDS, MODEL
+from talk_with_data.config import MAX_TOOL_ROUNDS, TEXT_TO_SQL_MODEL
 from talk_with_data.text_to_sql import (
     _complete,
     _extract_sql,
@@ -62,7 +62,7 @@ class TestGeneration(unittest.TestCase):
 
         self.assertEqual(sql, "SELECT 1")
         call = client.chat.completions.create.call_args.kwargs
-        self.assertEqual(call["model"], MODEL)
+        self.assertEqual(call["model"], TEXT_TO_SQL_MODEL)
         self.assertEqual(call["messages"][0]["role"], "system")
         self.assertIn("CREATE TABLE t(a INT);", call["messages"][0]["content"])
         self.assertEqual(call["messages"][1], {"role": "user", "content": "How many?"})
@@ -156,7 +156,7 @@ class TestGeneration(unittest.TestCase):
         self.assertEqual(with_tools.content, "```sql\nSELECT 1\n```")
         parse_call = client.chat.completions.parse.call_args.kwargs
         self.assertEqual(parse_call["tools"], definitions)
-        self.assertEqual(parse_call["model"], MODEL)
+        self.assertEqual(parse_call["model"], TEXT_TO_SQL_MODEL)
         client.chat.completions.create.assert_not_called()
 
         without_tools = _complete(client, messages, [])
@@ -164,7 +164,7 @@ class TestGeneration(unittest.TestCase):
         self.assertEqual(without_tools.content, "```sql\nSELECT 2\n```")
         create_call = client.chat.completions.create.call_args.kwargs
         self.assertNotIn("tools", create_call)
-        self.assertEqual(create_call["model"], MODEL)
+        self.assertEqual(create_call["model"], TEXT_TO_SQL_MODEL)
 
     def test_build_system_prompt(self) -> None:
         prompt = build_system_prompt("CREATE TABLE t(a INT);")

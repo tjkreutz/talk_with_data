@@ -11,7 +11,12 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 
-from talk_with_data.config import HISTORY_TURNS, MAX_TOOL_ROUNDS, MODEL, PROMPT_NAME
+from talk_with_data.config import (
+    HISTORY_TURNS,
+    MAX_TOOL_ROUNDS,
+    TEXT_TO_SQL_MODEL,
+    TEXT_TO_SQL_PROMPT_NAME,
+)
 from talk_with_data.tools import TOOLS, ToolHandler, run_tool_calls
 from talk_with_data.utils import load_prompt
 
@@ -59,7 +64,7 @@ def _build_messages(
 
 
 def build_system_prompt(schema: str) -> str:
-    return load_prompt(PROMPT_NAME).format(schema=schema)
+    return load_prompt(TEXT_TO_SQL_PROMPT_NAME).format(schema=schema)
 
 
 def create_client() -> OpenAI:
@@ -75,12 +80,14 @@ def _complete(
 ) -> ChatCompletionMessage:
     if tools:
         parsed = client.chat.completions.parse(
-            model=MODEL, messages=messages, tools=tools
+            model=TEXT_TO_SQL_MODEL, messages=messages, tools=tools
         )
 
         return parsed.choices[0].message
 
-    response = client.chat.completions.create(model=MODEL, messages=messages)
+    response = client.chat.completions.create(
+        model=TEXT_TO_SQL_MODEL, messages=messages
+    )
 
     return response.choices[0].message
 
