@@ -42,3 +42,26 @@ directly and runs analytical SQL fast, and there is no database file to keep in
 sync with `data/raw/`. Loading all 8 files takes under half a second. We rely on
 DuckDB's type detection: timestamps become `TIMESTAMP`, and zip prefixes stay
 text, so their leading zeros survive.
+
+## Baseline: text-to-SQL with a bare schema
+
+The baseline is one LLM call per question. The model gets the schema and the
+question and returns one DuckDB query. It is the simplest thing that works, so
+every later improvement can be measured against it on dev.
+
+- **Bare schema, no help.** The prompt holds only the `CREATE TABLE` text of
+  `orders`, `order_reviews` and `customers`, generated from the live DuckDB
+  tables so it cannot drift from the data. There are no column descriptions,
+  no sample rows, no few-shot examples and no warnings about the known traps.
+  Each of those is a separate experiment later, so we can attribute a gain to
+  it. The traps (customer_id vs customer_unique_id, date-only estimates,
+  accented city names) are expected to be where the baseline fails.
+- **Three tables, not eight.** The loader creates all 8 tables, but the model
+  only sees the assignment's three core ones, which is all the 300 questions
+  need. Fewer tables means fewer wrong joins and a fair baseline.
+- **SQL only.** The baseline returns SQL and nothing else. The plain-language
+  explanation of the result is a second call, kept out of the metric.
+- **Haiku 5.5 first, through OpenRouter.** Haiku is cheap and fast (1–2 s per
+  question in a first check), and starting small shows how much better prompting
+  buys before we pay for a bigger model. OpenRouter speaks the OpenAI API, so we
+  use the `openai` SDK, with the endpoint and key in `.env`.

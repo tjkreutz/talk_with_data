@@ -20,6 +20,11 @@ curl -L -o olist.zip https://www.kaggle.com/api/v1/datasets/download/olistbr/bra
 unzip -o olist.zip -d data/raw
 ```
 
+## Configuration
+
+The LLM is reached through an OpenAI-compatible API (we use OpenRouter). Copy
+`.env.example` to `.env` and fill in `LLM_API_KEY`.
+
 ## Development
 
 ```sh
