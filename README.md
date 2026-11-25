@@ -20,6 +20,12 @@ curl -L -o olist.zip https://www.kaggle.com/api/v1/datasets/download/olistbr/bra
 unzip -o olist.zip -d data/raw
 ```
 
+## Review search
+
+The review vectors are in `data/vectors/review_embeddings.parquet` and load as the
+table `review_embeddings`. Pass a `search` function to `generate_sql` to give the
+model a `search_reviews` tool.
+
 ## Configuration
 
 App settings (model, prompt, paths, views, evaluation and statistics parameters) are in `talk_with_data/config.py`.

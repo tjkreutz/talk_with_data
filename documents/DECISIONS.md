@@ -281,3 +281,20 @@ kept in `data/prompts/system_prompt.txt`. The default model is now Flash Lite.
 - Still failing: label text and column order in `late_vs_ontime_state`, and
   `carrier_days_state`, where the model's own rounding to 2 decimals meets our
   rounding to 1.
+
+## Semantic search over reviews, as a tool
+
+Free-text review questions cannot be answered with the views, so the model can
+call `search_reviews(query)`, which returns the 10 most similar reviews as JSON.
+
+- **Model: hosted `mongodb/voyage-4-lite`, cut to 256 dimensions.** It is the
+  only small multilingual embedding model on OpenRouter, and it found the right
+  Portuguese review for 7 of 7 test queries (English-only MiniLM: 1 of 7).
+- **The vectors are a committed data file, like the raw CSVs.** The 42,697
+  reviews with a title or message are embedded once into
+  `data/vectors/review_embeddings.parquet` (48 MB, under GitHub's 50 MB warning),
+  and `create_connection` loads it as a table. There is no build script, so
+  changing the model or dimensions means regenerating the file by hand.
+- **The tool is optional in `generate_sql`,** so the prompt and recorded
+  experiments are unchanged. The prompt hash does not show whether it was on, so
+  record that if we ever evaluate with it. Not evaluated yet.

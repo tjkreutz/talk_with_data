@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from duckdb import DuckDBPyConnection
+from duckdb import DuckDBPyConnection, connect
 
 from talk_with_data.database import _get_table_name, create_connection
 
@@ -42,7 +42,7 @@ class TestDatabase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             _write_raw_files(Path(directory))
             self.connection: DuckDBPyConnection = create_connection(
-                raw_dir=Path(directory)
+                raw_dir=Path(directory), vectors_path=Path(directory) / "none.parquet"
             )
 
     def test_create_connection(self) -> None:
@@ -79,6 +79,32 @@ class TestDatabase(unittest.TestCase):
                 "SELECT product_category_name_english FROM product_category_name_translation"
             ).fetchall(),
             [("beauty",)],
+        )
+
+    def test_create_connection_with_vectors(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            raw_dir = Path(directory) / "raw"
+            raw_dir.mkdir()
+            _write_raw_files(raw_dir)
+            vectors_path = Path(directory) / "review_embeddings.parquet"
+            connect().execute(
+                "COPY (SELECT 'r1' AS review_id, 'o1' AS order_id, 5 AS review_score, "
+                "'Bom' AS review_text, [0.5, 0.25]::FLOAT[] AS embedding) "
+                f"TO '{vectors_path}' (FORMAT parquet)"
+            )
+
+            connection = create_connection(raw_dir=raw_dir, vectors_path=vectors_path)
+
+        self.assertEqual(
+            connection.sql("SELECT * FROM review_embeddings").fetchall(),
+            [("r1", "o1", 5, "Bom", [0.5, 0.25])],
+        )
+        self.assertEqual(
+            self.connection.sql(
+                "SELECT count(*) FROM information_schema.tables "
+                "WHERE table_name = 'review_embeddings'"
+            ).fetchall(),
+            [(0,)],
         )
 
     def test_order_facts(self) -> None:
